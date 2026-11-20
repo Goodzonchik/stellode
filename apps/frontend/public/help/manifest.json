@@ -1,0 +1,10 @@
+[
+  { "title": "О продукте", "file": "about.md" },
+  { "title": "Глоссарий", "file": "glossary.md" },
+  { "title": "Быстрый старт", "file": "quick-start.md" },
+  { "title": "Сценарии по ролям", "file": "scenarios.md" },
+  { "title": "Релиз приложения", "file": "guides/application-release.md" },
+  { "title": "Фича и состав", "file": "guides/feature.md" },
+  { "title": "Диаграммы и impact", "file": "guides/diagrams.md" },
+  { "title": "Cross-unit и DEPENDS_ON", "file": "guides/cross-unit.md" }
+]

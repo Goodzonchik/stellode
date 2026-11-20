@@ -1,0 +1,33 @@
+.status-warning-modal__loading {
+  display: flex;
+  justify-content: center;
+  padding: 24px 0;
+}
+
+.status-warning-modal__details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.status-warning-modal__collapse {
+  margin-top: 8px;
+}
+
+.status-warning-modal__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.status-warning-modal__list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.status-warning-modal__empty {
+  padding: 8px 0;
+}

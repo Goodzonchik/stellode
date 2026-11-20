@@ -1,0 +1,66 @@
+{
+  "name": "backend",
+  "root": "apps/backend",
+  "sourceRoot": "apps/backend/src",
+  "projectType": "application",
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "dependsOn": ["^build"],
+      "options": {
+        "outputPath": "dist/apps/backend",
+        "main": "apps/backend/src/main.ts",
+        "tsConfig": "apps/backend/tsconfig.app.json",
+        "assets": ["apps/backend/src/assets"],
+        "target": "es2021",
+        "module": "commonjs",
+        "rootDir": "apps/backend"
+      },
+      "configurations": {
+        "development": {},
+        "production": {}
+      }
+    },
+    "serve": {
+      "executor": "@nx/js:node",
+      "options": {
+        "buildTarget": "backend:build",
+        "waitUntilTargets": ["backend:build"],
+        "inspect": false
+      },
+      "configurations": {
+        "development": {
+          "runtimeArgs": ["--enable-source-maps"]
+        },
+        "production": {
+          "watch": false,
+          "inspect": false
+        }
+      }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "apps/backend/jest.config.ts",
+        "passWithNoTests": false
+      },
+      "configurations": {
+        "ci": {
+          "ci": true,
+          "codeCoverage": true
+        }
+      }
+    },
+    "integration-test": {
+      "executor": "@nx/jest:jest",
+      "outputs": [],
+      "options": {
+        "jestConfig": "apps/backend/jest.integration.config.ts",
+        "passWithNoTests": true
+      }
+    }
+  },
+  "tags": []
+}

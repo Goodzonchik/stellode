@@ -1,0 +1,25 @@
+.deprecated-warning-triangle {
+  color: #faad14;
+  font-size: 14px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.deprecated-warning-triangle--clickable {
+  cursor: pointer;
+}
+
+.deprecated-warning-triangle--node {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  z-index: 1;
+  font-size: 16px;
+  pointer-events: auto;
+}
+
+.deprecated-warning-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}

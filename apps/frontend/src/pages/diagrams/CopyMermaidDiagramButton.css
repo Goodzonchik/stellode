@@ -1,0 +1,17 @@
+.copy-mermaid-diagram-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.copy-mermaid-diagram-button__icon {
+  display: block;
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}
+
+.diagram-mermaid-panel {
+  margin-bottom: 10px;
+  margin-left: 48px;
+}

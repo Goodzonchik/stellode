@@ -1,0 +1,31 @@
+---
+alwaysApply: true
+description: Apply best practices for HTML/CSS layout, semantic markup, accessibility, and responsive design
+---
+
+# Rules
+
+## HTML Rules
+
+1. Use semantic HTML elements (`header`, `nav`, `main`, `section`, `article`, `aside`, `footer`) instead of generic `div`/`span` where appropriate
+2. Do not use inline styles (`style` attribute) – separate presentation into CSS
+3. Validate HTML to avoid unclosed tags, duplicate attributes, or invalid nesting
+4. Separate homogeneous tags with an empty line
+
+## CSS Rules
+
+1. Use class names for styling; avoid ID selectors for styling
+2. Follow a consistent BEM naming methodology
+3. Avoid `!important`
+4. Use CSS Flexbox and Grid
+5. Keep selectors shallow – maximum 3 levels of nesting
+6. Group related CSS rules logically and remove unused styles
+
+## Code Organization
+
+1. Keep CSS in separate `.css` files
+2. Do not use CSS-in-JS approach
+3. Name CSS files consistently with their component/page name (e.g., `Header.css` or `Header.module.css`)
+4. Use CSS custom properties (variables) for theming and repeated values (colors, spacing, typography)
+5. Use 2-space indentation – be consistent across the project
+6. Remove dead code: regularly audit and delete unused HTML elements and CSS rules

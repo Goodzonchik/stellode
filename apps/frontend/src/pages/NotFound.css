@@ -1,0 +1,8 @@
+.not-found {
+  text-align: center;
+  padding: 32px;
+}
+
+.not-found__actions {
+  margin-top: 16px;
+}

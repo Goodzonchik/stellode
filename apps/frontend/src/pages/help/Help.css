@@ -1,0 +1,98 @@
+.help-page {
+  display: grid;
+  grid-template-columns: minmax(200px, 260px) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+  min-height: 240px;
+}
+
+.help-page--loading,
+.help-page__spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+}
+
+.help-page__toc {
+  position: sticky;
+  top: calc(var(--app-header-height, 47px) + 12px);
+  max-height: calc(100vh - var(--app-header-height, 47px) - 24px);
+  overflow: auto;
+  border-right: 1px solid #f0f0f0;
+  padding-right: 8px;
+}
+
+.help-page__content {
+  min-width: 0;
+}
+
+.help-article {
+  line-height: 1.6;
+  color: rgba(0, 0, 0, 0.88);
+}
+
+.help-article__markdown > :first-child {
+  margin-top: 0;
+}
+
+.help-article h1,
+.help-article h2,
+.help-article h3,
+.help-article h4,
+.help-article h5,
+.help-article h6 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  scroll-margin-top: 16px;
+}
+
+.help-article__copy-link {
+  border: 0;
+  background: transparent;
+  color: #8c8c8c;
+  cursor: pointer;
+  font-size: 0.85em;
+  line-height: 1;
+  padding: 0 4px;
+  opacity: 0;
+}
+
+.help-article h1:hover .help-article__copy-link,
+.help-article h2:hover .help-article__copy-link,
+.help-article h3:hover .help-article__copy-link,
+.help-article h4:hover .help-article__copy-link,
+.help-article h5:hover .help-article__copy-link,
+.help-article h6:hover .help-article__copy-link,
+.help-article__copy-link:focus-visible {
+  opacity: 1;
+}
+
+.help-article img {
+  max-width: 100%;
+  height: auto;
+}
+
+.help-article pre.mermaid {
+  background: #fafafa;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  padding: 16px;
+  overflow: auto;
+}
+
+@media (max-width: 768px) {
+  .help-page {
+    grid-template-columns: 1fr;
+  }
+
+  .help-page__toc {
+    position: static;
+    max-height: none;
+    border-right: 0;
+    border-bottom: 1px solid #f0f0f0;
+    padding-right: 0;
+    padding-bottom: 8px;
+  }
+}

@@ -1,0 +1,92 @@
+/* Сбрасываем дефолтную рамку/паддинг RF-обёртки — одна рамка на .group-node */
+.react-flow__node.react-flow__node-group,
+.react-flow__node.react-flow__node-group.selected,
+.react-flow__node.react-flow__node-group.dragging {
+  padding: 0;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+  /* обводка diff у дочерних component не обрезается */
+  overflow: visible;
+}
+
+/* Контейнер Application (subflow); размеры — синхрон с diagram-group-node-layout.ts */
+.group-node {
+  --group-node-header-height: 36px;
+  --group-node-accent: #4ecdc4;
+  --group-node-bg: rgba(78, 205, 196, 0.08);
+  --group-node-header-bg: rgba(78, 205, 196, 0.18);
+  --group-node-header-border: rgba(78, 205, 196, 0.6);
+
+  position: relative;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  border: 2px solid var(--group-node-accent);
+  border-radius: 10px;
+  background: var(--group-node-bg);
+}
+
+.group-node__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: var(--group-node-header-height);
+  padding: 0 12px;
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--group-node-header-border);
+  border-radius: 8px 8px 0 0;
+  background: var(--group-node-header-bg);
+}
+
+.group-node__icon {
+  font-size: 18px;
+  color: rgba(0, 0, 0, 0.72);
+}
+
+.group-node__caption {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.group-node--with-dependency {
+  --group-node-accent: #9b7fd4;
+  --group-node-bg: rgba(201, 184, 255, 0.18);
+  --group-node-header-bg: rgba(201, 184, 255, 0.28);
+  --group-node-header-border: rgba(155, 127, 212, 0.6);
+}
+
+/* Unit: цвет рамки — CSS-переменные из FNV→HSL по data.unitId (build-group-node-unit-accent-style) */
+
+.group-node--impact {
+  outline: 3px solid #1677ff;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.35);
+}
+
+.group-node--hover {
+  outline: 2px solid #1677ff;
+  outline-offset: 2px;
+}
+
+.group-node--diff-added {
+  outline: 3px solid #5aad7a;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px rgba(90, 173, 122, 0.4);
+  background: rgba(184, 230, 203, 0.35);
+}
+
+.group-node--diff-removed {
+  outline: 3px solid #d07070;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px rgba(208, 112, 112, 0.4);
+  background: rgba(240, 196, 196, 0.35);
+}

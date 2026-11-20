@@ -1,0 +1,91 @@
+.root {
+  padding: 4px 8px 16px;
+  overflow: visible;
+}
+
+.paneActions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.group {
+  margin-bottom: 20px;
+}
+
+.groupTitle {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.88);
+}
+
+.tableWrap {
+  overflow-x: auto;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.tableWrap :global(.ant-table) {
+  background: #fff;
+}
+
+.tableWrap :global(.ant-table-thead > tr > th) {
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.tableWrap :global(.ant-table-tbody > tr > td) {
+  vertical-align: middle;
+}
+
+.foreign {
+  margin-top: 24px;
+  padding-top: 8px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.unitTitle {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.88);
+}
+
+.pair {
+  display: flex;
+  gap: 24px;
+  margin: 0 0 12px;
+}
+
+.pair div {
+  display: flex;
+  gap: 8px;
+}
+
+.pair dt {
+  margin: 0;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.pair dd {
+  margin: 0;
+  color: rgba(0, 0, 0, 0.88);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.rowAdded :global(td) {
+  background: #b8e6cb;
+}
+
+.rowRemoved :global(td) {
+  background: #f0c4c4;
+}

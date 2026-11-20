@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Stellode">
+  <title>Stellode</title>
+  <g stroke="#1F6F7A" stroke-width="1.8" stroke-linecap="butt" fill="none">
+    <path d="M25.9 12.1 L20.1 17.9"/>
+    <path d="M32.1 12.1 L37.9 17.9"/>
+    <path d="M20.1 24.1 L25.9 29.9"/>
+    <path d="M37.9 24.1 L32.1 29.9"/>
+    <path d="M32.1 36.1 L37.9 41.9"/>
+    <path d="M25.9 36.1 L20.1 41.9"/>
+    <path d="M44.4 47.7 L47.6 50.3"/>
+  </g>
+  <rect x="25" y="5" width="8" height="8" rx="2" fill="#D9EEF2" stroke="#1F6F7A" stroke-width="1.2"/>
+  <rect x="13" y="17" width="8" height="8" rx="2" fill="#2B9FD9" stroke="#0E5F8A" stroke-width="1.2"/>
+  <rect x="37" y="17" width="8" height="8" rx="2" fill="#2B9FD9" stroke="#0E5F8A" stroke-width="1.2"/>
+  <rect x="25" y="29" width="8" height="8" rx="2" fill="#D4A017" stroke="#8A6A00" stroke-width="1.2"/>
+  <rect x="37" y="41" width="8" height="8" rx="2" fill="#2B9FD9" stroke="#0E5F8A" stroke-width="1.2"/>
+  <rect x="13" y="41" width="8" height="8" rx="2" fill="#2B9FD9" stroke="#0E5F8A" stroke-width="1.2"/>
+  <rect x="47" y="49" width="8" height="8" rx="2" fill="#7B5FC7" stroke="#4A348A" stroke-width="1.2"/>
+</svg>

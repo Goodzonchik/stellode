@@ -1,0 +1,15 @@
+# Add files here to ignore them from prettier formatting
+/node_modules
+/.cursor
+/.vscode
+/agent-transcripts
+/dist
+/coverage
+/.nx/cache
+/.nx/workspace-data
+.vite
+.turbo
+.DS_Store
+.env
+.env.*
+.angular

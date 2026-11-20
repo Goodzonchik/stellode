@@ -1,0 +1,12 @@
+.depends-on-edge__label {
+  position: absolute;
+  pointer-events: none;
+  transform: translate(-50%, -50%)
+    translate(var(--depends-on-edge-label-x), var(--depends-on-edge-label-y));
+  font-size: 10px;
+  line-height: 1.2;
+  color: #555;
+  background: #fff;
+  padding: 1px 4px;
+  border-radius: 2px;
+}

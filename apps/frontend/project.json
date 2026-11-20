@@ -1,0 +1,50 @@
+{
+  "name": "frontend",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "root": "apps/frontend",
+  "sourceRoot": "apps/frontend/src",
+  "projectType": "application",
+  "targets": {
+    "help-sync": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node scripts/help-sync.mjs",
+        "cwd": "{workspaceRoot}"
+      }
+    },
+    "serve": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["help-sync"],
+      "options": {
+        "cwd": "apps/frontend",
+        "command": "vite"
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["help-sync"],
+      "outputs": ["{workspaceRoot}/dist/apps/frontend"],
+      "options": {
+        "cwd": "apps/frontend",
+        "command": "vite build"
+      }
+    },
+    "preview": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build"],
+      "options": {
+        "cwd": "apps/frontend",
+        "command": "vite preview"
+      }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "apps/frontend/jest.config.ts",
+        "passWithNoTests": false
+      }
+    }
+  },
+  "tags": []
+}

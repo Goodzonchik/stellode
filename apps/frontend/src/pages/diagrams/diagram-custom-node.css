@@ -1,0 +1,168 @@
+.custom-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 128px;
+  box-sizing: border-box;
+  background: transparent;
+  border: none;
+  padding: 0;
+  border-radius: 0;
+}
+
+.custom-node__square {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.custom-node__duplicate-label {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  right: 4px;
+  z-index: 1;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 12px;
+  text-align: center;
+  color: #555;
+  pointer-events: none;
+}
+
+.custom-node__type-icon {
+  font-size: 40px;
+  color: rgba(0, 0, 0, 0.72);
+}
+
+.custom-node__caption {
+  margin-top: 6px;
+  width: 100%;
+  max-width: 128px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+  color: #222;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  word-break: break-word;
+}
+
+.custom-node__square.custom-node--unit {
+  background-color: #ff6b6b;
+}
+
+.custom-node__square.custom-node--app {
+  background-color: #4ecdc4;
+}
+
+.custom-node__square.custom-node--team {
+  background-color: #a38fff;
+}
+
+.custom-node__square.custom-node--service {
+  background-color: #56d4c8;
+}
+
+.custom-node__square.custom-node--feature {
+  background-color: #ff8150;
+}
+
+.custom-node__square.custom-node--component {
+  background-color: #6bcbff;
+}
+
+.custom-node__square.custom-node--componentVersion {
+  background-color: #b8e986;
+}
+
+.custom-node__square.custom-node--applicationVersion {
+  background-color: #7cc6fe;
+}
+
+.custom-node__square.custom-node--featureVersion {
+  background-color: #ffd166;
+}
+
+.custom-node__square.custom-node--dependency {
+  background-color: #c9b8ff;
+}
+
+.custom-node__square.custom-node--consumer {
+  background-color: #f4a261;
+  border: 2px dashed #e76f51;
+}
+
+.custom-node__square.custom-node--default {
+  background-color: #95e1d3;
+}
+
+.custom-node__tooltip-line {
+  margin: 0 0 4px;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.custom-node__tooltip-line:last-child {
+  margin-bottom: 0;
+}
+
+.custom-node--impact .custom-node__square {
+  outline: 3px solid #1677ff;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.35);
+}
+
+.custom-node--hover .custom-node__square {
+  outline: 2px solid #1677ff;
+  outline-offset: 2px;
+}
+
+/* ui-spec — акцент поверх типовой заливки (квадрат) */
+.custom-node__square.custom-node--status-draft {
+  box-shadow: inset 0 0 0 2px #6c757d;
+}
+
+.custom-node__square.custom-node--status-active,
+.custom-node__square.custom-node--status-current {
+  box-shadow: inset 0 0 0 2px #198754;
+}
+
+/* Прикладной статус HAS_COMPONENT.status у копии внутри контейнера Application */
+.custom-node__square.custom-node--app-status-active {
+  box-shadow: inset 0 0 0 2px #198754;
+}
+
+.custom-node__square.custom-node--status-previous {
+  opacity: 0.72;
+  filter: saturate(0.85);
+  box-shadow: inset 0 0 0 2px #adb5bd;
+}
+
+/* FeatureVersion compare (ui-spec §5.4): обводка + заливка поверх цвета типа */
+.custom-node.custom-node--diff-added .custom-node__square,
+.custom-node__square.custom-node__square--diff-added {
+  outline: 3px solid #5aad7a;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px rgba(90, 173, 122, 0.4);
+  background-color: #b8e6cb;
+  color: #1a1a1a;
+}
+
+.custom-node.custom-node--diff-removed .custom-node__square,
+.custom-node__square.custom-node__square--diff-removed {
+  outline: 3px solid #d07070;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px rgba(208, 112, 112, 0.4);
+  background-color: #f0c4c4;
+  color: #1a1a1a;
+}

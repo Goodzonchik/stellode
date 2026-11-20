@@ -1,0 +1,1 @@
+export const BRIDGE_UNIT_STRUCTURAL_EDGE_TYPES = new Set(['HAS_TEAM', 'PROVIDES', 'OWNS']);

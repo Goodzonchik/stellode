@@ -1,0 +1,65 @@
+.mermaid-tools-page {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: calc(100vh - var(--app-header-height));
+}
+
+.mermaid-tools-page__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.mermaid-tools-page__title {
+  margin: 0;
+  margin-right: auto;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.mermaid-tools-page__body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  flex: 1;
+  min-height: 0;
+}
+
+.mermaid-tools-page__body--editor-collapsed {
+  grid-template-columns: 1fr;
+}
+
+.mermaid-tools-page__editor {
+  display: flex;
+  flex-direction: column;
+  min-height: 320px;
+}
+
+.mermaid-tools-page__textarea {
+  flex: 1;
+  width: 100%;
+  min-height: 320px;
+  resize: vertical;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.45;
+  padding: 12px;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+}
+
+.mermaid-tools-page__preview {
+  min-height: 320px;
+  padding: 12px;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  overflow: auto;
+  background: #fff;
+}
+
+.mermaid-tools-page__preview .mermaid {
+  display: flex;
+  justify-content: center;
+}

@@ -1,0 +1,24 @@
+networks:
+  default:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.19.0.0/16
+
+services:
+  neo4j:
+    image: neo4j:5
+    container_name: stellode-neo4j
+    ports:
+      - '7474:7474'
+      - '7687:7687'
+    environment:
+      - NEO4J_AUTH=${NEO4J_USER:-neo4j}/${NEO4J_PASSWORD:-stellode}
+    volumes:
+      - neo4j-data:/data
+    networks:
+      default:
+        ipv4_address: 172.19.0.5
+
+volumes:
+  neo4j-data:
