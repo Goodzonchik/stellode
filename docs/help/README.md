@@ -9,6 +9,7 @@
 - [Быстрый старт](./quick-start.md)
 - [Сценарии по ролям](./scenarios.md)
 - [Релиз приложения](./guides/application-release.md)
+- [Компонент и версии](./guides/components.md)
 - [Фича и состав](./guides/feature.md)
 - [Диаграммы и impact](./guides/diagrams.md)
 - [Cross-unit и DEPENDS_ON](./guides/cross-unit.md)
