@@ -74,6 +74,55 @@
   height: auto;
 }
 
+.help-article__table-wrap {
+  margin: 16px 0;
+  overflow-x: auto;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.help-article table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 14px;
+  background: #fff;
+}
+
+.help-article thead > tr > th {
+  padding: 12px 16px;
+  text-align: start;
+  vertical-align: middle;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.88);
+  background: #fafafa;
+  border-bottom: 1px solid #f0f0f0;
+  white-space: nowrap;
+}
+
+.help-article tbody > tr > td {
+  padding: 12px 16px;
+  text-align: start;
+  vertical-align: top;
+  color: rgba(0, 0, 0, 0.88);
+  border-bottom: 1px solid #f0f0f0;
+  transition: background 0.2s ease;
+}
+
+.help-article tbody > tr:last-child > td {
+  border-bottom: 0;
+}
+
+.help-article tbody > tr:hover > td {
+  background: #fafafa;
+}
+
+.help-article td code,
+.help-article th code {
+  font-size: 12px;
+}
+
 .help-article pre.mermaid {
   background: #fafafa;
   border: 1px solid #f0f0f0;

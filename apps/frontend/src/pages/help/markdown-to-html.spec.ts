@@ -10,4 +10,10 @@ describe('markdownToHtml', () => {
     const html = markdownToHtml('```mermaid\nflowchart LR\n```');
     expect(html).toContain('<code');
   });
+
+  it('wraps tables for help article styles', () => {
+    const html = markdownToHtml('| A | B |\n| --- | --- |\n| 1 | 2 |');
+    expect(html).toContain('<div class="help-article__table-wrap"><table>');
+    expect(html).toContain('</table>\n</div>');
+  });
 });
