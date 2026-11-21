@@ -83,32 +83,6 @@ flowchart TB
   class CV4 draft
 ```
 
-## 6. Несколько опубликованных линий
-
-После публикаций у компонента остаётся каталог всех `HAS_VERSION`. Появление новой версии **не** переводит предыдущую в `unactive` само по себе. У компонента **допускается несколько глобально `active`** одновременно — если разные приложения держат разные линии. Инвариант «одна `active`» действует только внутри состава одного релиза приложения.
-
-```mermaid
-flowchart TB
-  Component((Компонент))
-  CV1(("v1<br/>active"))
-  CV2(("v2<br/>active"))
-  AppA(("Приложение A<br/>current"))
-  AppB(("Приложение B<br/>current"))
-  Component -->|HAS_VERSION| CV1
-  Component -->|HAS_VERSION| CV2
-  CV2 -->|INHERITED| CV1
-  AppA -->|"HAS_COMPONENT<br/>active"| CV1
-  AppB -->|"HAS_COMPONENT<br/>active"| CV2
-  classDef component fill:#E6F4FF,stroke:#1677FF,color:#1677FF,stroke-width:2px
-  classDef active fill:#F6FFED,stroke:#52C41A,color:#389E0D,stroke-width:2px
-  classDef application fill:#E6FFFB,stroke:#13C2C2,color:#08979C,stroke-width:2px
-  class Component component
-  class CV1,CV2 active
-  class AppA,AppB application
-```
-
-В релизе можно взять любую **более позднюю** версию по цепочке `INHERITED` без обязательного выпуска промежуточных релизов для каждой ступени.
-
 ### Миграция версий в одном приложении
 
 В одном приложении допустимы несколько версий одного компонента, например одна версия `active` для новых пользователей и `deprecated` для старых.

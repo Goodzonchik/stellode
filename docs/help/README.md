@@ -5,6 +5,7 @@
 ## Оглавление
 
 - [О продукте](./about.md)
+- [Мотивация](./motivation.md)
 - [Глоссарий](./glossary.md)
 - [Быстрый старт](./quick-start.md)
 - [Сценарии по ролям](./scenarios.md)
