@@ -16,4 +16,33 @@ describe('markdownToHtml', () => {
     expect(html).toContain('<div class="help-article__table-wrap"><table>');
     expect(html).toContain('</table>\n</div>');
   });
+
+  it('renders plain blockquote as untyped callout', () => {
+    const html = markdownToHtml('> Только одна draft');
+    expect(html).toContain(
+      '<blockquote class="help-article__callout help-article__callout--plain">',
+    );
+    expect(html).toContain('<p>Только одна draft</p>');
+    expect(html).not.toContain('help-article__callout-title');
+  });
+
+  it('renders typed GitHub-style callout with Russian title', () => {
+    const html = markdownToHtml(
+      '> [!WARNING]\n> У компонента одновременно допустима только одна `draft`.',
+    );
+    expect(html).toContain(
+      '<aside class="help-article__callout help-article__callout--warning">',
+    );
+    expect(html).toContain('<p class="help-article__callout-title">Внимание</p>');
+    expect(html).toContain('<code>draft</code>');
+    expect(html).not.toContain('[!WARNING]');
+  });
+
+  it('keeps body paragraphs after a marker-only first line', () => {
+    const html = markdownToHtml('> [!NOTE]\n>\n> Второй абзац');
+    expect(html).toContain('help-article__callout--note');
+    expect(html).toContain('<p class="help-article__callout-title">Заметка</p>');
+    expect(html).toContain('<p>Второй абзац</p>');
+    expect(html).not.toContain('[!NOTE]');
+  });
 });

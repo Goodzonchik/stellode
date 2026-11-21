@@ -131,6 +131,61 @@
   overflow: auto;
 }
 
+.help-article__callout {
+  --help-callout-accent: #8c8c8c;
+  --help-callout-bg: #fafafa;
+  margin: 16px 0;
+  padding: 12px 16px;
+  border-left: 4px solid var(--help-callout-accent);
+  border-radius: 0 8px 8px 0;
+  background: var(--help-callout-bg);
+  color: rgba(0, 0, 0, 0.88);
+}
+
+.help-article__callout > :first-child {
+  margin-top: 0;
+}
+
+.help-article__callout > :last-child {
+  margin-bottom: 0;
+}
+
+.help-article__callout-title {
+  margin: 0 0 8px;
+  font-weight: 600;
+  color: var(--help-callout-accent);
+}
+
+.help-article__callout--plain {
+  --help-callout-accent: #8c8c8c;
+  --help-callout-bg: #fafafa;
+}
+
+.help-article__callout--note {
+  --help-callout-accent: #1677ff;
+  --help-callout-bg: #e6f4ff;
+}
+
+.help-article__callout--tip {
+  --help-callout-accent: #389e0d;
+  --help-callout-bg: #f6ffed;
+}
+
+.help-article__callout--important {
+  --help-callout-accent: #0958d9;
+  --help-callout-bg: #e6f4ff;
+}
+
+.help-article__callout--warning {
+  --help-callout-accent: #d48806;
+  --help-callout-bg: #fffbe6;
+}
+
+.help-article__callout--caution {
+  --help-callout-accent: #cf1322;
+  --help-callout-bg: #fff2f0;
+}
+
 @media (max-width: 768px) {
   .help-page {
     grid-template-columns: 1fr;
