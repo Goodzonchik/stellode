@@ -72,6 +72,7 @@
 .help-article img {
   max-width: 100%;
   height: auto;
+  cursor: zoom-in;
 }
 
 .help-article__table-wrap {
@@ -129,6 +130,10 @@
   border-radius: 8px;
   padding: 16px;
   overflow: auto;
+}
+
+.help-article__mermaid--zoomable {
+  cursor: zoom-in;
 }
 
 .help-article__callout {

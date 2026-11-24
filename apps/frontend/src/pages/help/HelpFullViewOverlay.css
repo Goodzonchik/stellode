@@ -1,0 +1,105 @@
+.help-full-view {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: stretch;
+  padding: 0;
+  background: rgba(0, 0, 0, 0.72);
+  box-sizing: border-box;
+}
+
+.help-full-view__close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 2;
+  border: 0;
+  border-radius: 4px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.92);
+  color: rgba(0, 0, 0, 0.88);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.help-full-view__close:hover {
+  background: #fff;
+}
+
+.help-full-view__content {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  align-items: stretch;
+  justify-content: center;
+}
+
+.help-full-view__content--image {
+  flex: 0 0 auto;
+  width: auto;
+  max-width: calc(100% - 48px);
+  max-height: calc(100% - 48px);
+  margin: auto;
+}
+
+.help-full-view__content--image img {
+  display: block;
+  max-width: 100%;
+  max-height: calc(100vh - 48px);
+  width: auto;
+  height: auto;
+}
+
+.help-full-view__mermaid {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  background: #fafafa;
+}
+
+.help-full-view__stage {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+}
+
+.help-full-view__stage--dragging {
+  cursor: grabbing;
+}
+
+.help-full-view__canvas {
+  transform-origin: 0 0;
+  width: max-content;
+  height: max-content;
+}
+
+.help-full-view__canvas svg {
+  display: block;
+  max-width: none;
+  height: auto;
+}
+
+.help-full-view__controls {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
