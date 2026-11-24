@@ -1,6 +1,5 @@
 [
   { "title": "О продукте", "file": "about.md" },
-  { "title": "Мотивация", "file": "motivation.md" },
   { "title": "Глоссарий", "file": "glossary.md" },
   { "title": "Быстрый старт", "file": "quick-start.md" },
   { "title": "Сценарии по ролям", "file": "scenarios.md" },
