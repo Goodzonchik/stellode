@@ -19,7 +19,7 @@
 | `PROVIDES` | организационная | `Unit` → `Service` | Услуга юнита |
 | `STAKEHOLDER` | организационная | `Unit` → `Feature` | Владение Feature |
 | `MAINTAINS` | организационная | `Team` → `Component` | Команда сопровождает компонент |
-| `AGGREGATES` | композиционная | `Service` → `Feature` | Состав услуги |
+| `AGGREGATES` | организационная | `Service` → `Feature` | Состав услуги |
 | `HAS_VERSION` | композиционная | родитель → `*Version` | Опубликованная версия сущности |
 | `HAS_DRAFT` | композиционная | родитель → `*Version` | Черновик версии сущности |
 | `INHERITED` | композиционная | `*Version` → `*Version` | Линейная история версий |

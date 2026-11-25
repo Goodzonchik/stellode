@@ -35,12 +35,22 @@
 | `PROVIDES`  | Юнит → Услуга | Услуга юнита |
 | `STAKEHOLDER`  | Юнит → Фича | Владение фичей |
 | `MAINTAINS`  | Команда → Компонент | Команда сопровождает компонент |
+| `AGGREGATES`  | Услуга → Фича | Состав услуги |
+
+```mermaid
+flowchart TB
+  Unit[Юнит] -->|HAS_TEAM| Team[Команда]
+  Unit -->|PROVIDES| Service[Услуга]
+  Unit -->|OWNS| Application[Приложение]
+  Unit -->|STAKEHOLDER| Feature[Фича]
+  Team -->|MAINTAINS| Component[Компонент]
+  Service -->|AGGREGATES| Feature
+```
 
 ### Композиционная
 
 | Ребро  | Направление | Назначение |
 | ----- | ----------- | ---------- |
-| `AGGREGATES`  | Услуга → Фича | Состав услуги |
 | `HAS_VERSION`  | родитель → `*Version` | Опубликованная версия сущности |
 | `HAS_DRAFT`  | родитель → `*Version` | Черновик версии сущности |
 | `INHERITED`  | `*Version` → `*Version` | Линейная история версий |
@@ -102,19 +112,3 @@
 ### Релиз приложения
 
 Фиксация нового `ApplicationVersion(current)` с составом `HAS_COMPONENT`. Через релиз обновляются прикладные и глобальные статусы версий компонентов.
-
-```mermaid
-flowchart TB
-  Unit[Юнит] -->|HAS_TEAM| Team[Команда]
-  Unit -->|PROVIDES| Service[Услуга]
-  Unit -->|OWNS| Application[Приложение]
-  Unit -->|STAKEHOLDER| Feature[Фича]
-  Team -->|MAINTAINS| Component[Компонент]
-  Service -->|AGGREGATES| Feature
-  Feature -->|HAS_VERSION / HAS_DRAFT| FeatureVersion[Версия фичи]
-  Application -->|HAS_VERSION| ApplicationVersion[Версия приложения]
-  Component -->|HAS_VERSION / HAS_DRAFT| ComponentVersion[Версия компонента]
-  FeatureVersion -->|USES_COMPONENT_VERSION| ComponentVersion
-  ApplicationVersion -->|HAS_COMPONENT| ComponentVersion
-  ComponentVersion -->|DEPENDS_ON| ComponentVersion
-```
