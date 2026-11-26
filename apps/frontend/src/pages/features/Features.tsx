@@ -6,8 +6,8 @@ import { servicesApi } from '../../api/services-api';
 import type { ColumnsType } from 'antd/es/table';
 import { resolveUnitScopedHighlightMismatch } from '../../common/list-highlight/resolve-unit-scoped-highlight-mismatch';
 import { useListRowHighlight } from '../../common/list-highlight/use-list-row-highlight';
-import { getErrorMessage } from '../../utils/axios-error';
 import { ToastVariant, useToast } from '../../hooks/useToast';
+import { useCrudPageFeedback } from '../../hooks/useCrudPageFeedback';
 import { useUnit } from '../../context/UnitContext';
 import type { DictionaryNode } from '../components/dictionary-node';
 import { useNavigate } from 'react-router-dom';
@@ -32,6 +32,8 @@ const defaultFeatureFormValues = (): FeatureFormValues => ({
 
 export function Features() {
   const { showToast } = useToast();
+  const { error, setError, clearError, reportFormError, toastError, runListLoad } =
+    useCrudPageFeedback();
   const { unit } = useUnit();
   const [features, setFeatures] = useState<Feature[]>([]);
   const [rowsLoaded, setRowsLoaded] = useState(false);
@@ -39,7 +41,6 @@ export function Features() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingFeature, setEditingFeature] = useState<Feature | null>(null);
   const [form] = Form.useForm<FeatureFormValues>();
-  const [error, setError] = useState<string | null>(null);
 
   const unitId = unit?.id;
   const navigate = useNavigate();
@@ -52,15 +53,12 @@ export function Features() {
 
   const loadFeatures = async () => {
     if (!unitId) return;
-    setRowsLoaded(false);
-    try {
-      setFeatures(await featuresApi.list<Feature>(unitId));
-    } catch (err) {
-      console.error('Error loading features:', err);
-      showToast(getErrorMessage(err), ToastVariant.Error);
-    } finally {
-      setRowsLoaded(true);
-    }
+    await runListLoad({
+      load: () => featuresApi.list<Feature>(unitId),
+      onSuccess: setFeatures,
+      setRowsLoaded,
+      logLabel: 'features',
+    });
   };
 
   const rowIds = useMemo(() => new Set(features.map((feature) => feature.id)), [features]);
@@ -86,12 +84,11 @@ export function Features() {
 
   const loadServices = async () => {
     if (!unitId) return;
-    try {
-      setServices(await servicesApi.list(unitId));
-    } catch (err) {
-      console.error('Error loading services:', err);
-      showToast(getErrorMessage(err), ToastVariant.Error);
-    }
+    await runListLoad({
+      load: () => servicesApi.list(unitId),
+      onSuccess: setServices,
+      logLabel: 'services',
+    });
   };
 
   const handleNavigateToVersions = (feature: Feature) => {
@@ -108,14 +105,14 @@ export function Features() {
       }
       navigate(featureVersionDiagramPath(versionId));
     } catch (err) {
-      showToast(getErrorMessage(err), ToastVariant.Error);
+      toastError(err);
     }
   };
 
   const handleOpenDialog = (feature?: Feature) => {
     setEditingFeature(feature ?? null);
     setIsDialogOpen(true);
-    setError(null);
+    clearError();
   };
 
   useEffect(() => {
@@ -135,11 +132,11 @@ export function Features() {
     form.resetFields();
     setIsDialogOpen(false);
     setEditingFeature(null);
-    setError(null);
+    clearError();
   };
 
   const handleSubmit = async (values: FeatureFormValues) => {
-    setError(null);
+    clearError();
 
     try {
       if (editingFeature) {
@@ -162,10 +159,7 @@ export function Features() {
       showToast('Фича сохранена', ToastVariant.Success);
       loadFeatures();
     } catch (err: unknown) {
-      const messageText = getErrorMessage(err, 'Не удалось сохранить фичу');
-
-      setError(messageText);
-      showToast(messageText, ToastVariant.Error);
+      reportFormError(err, 'Не удалось сохранить фичу');
     }
   };
 
@@ -179,8 +173,7 @@ export function Features() {
       showToast('Фича удалена', ToastVariant.Success);
       loadFeatures();
     } catch (err: unknown) {
-      const messageText = getErrorMessage(err, 'Не удалось удалить фичу');
-      showToast(messageText, ToastVariant.Error);
+      toastError(err, 'Не удалось удалить фичу');
     }
   };
 

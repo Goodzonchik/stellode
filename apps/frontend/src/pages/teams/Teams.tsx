@@ -7,19 +7,20 @@ import { useListRowHighlight } from '../../common/list-highlight/use-list-row-hi
 import { useUnit } from '../../context/UnitContext';
 import { useNavigate } from 'react-router-dom';
 import type { CreateTeamDto, TeamEntity, UpdateTeamDto } from '@stellode/models';
-import { getErrorMessage } from '../../utils/axios-error';
 import { ToastVariant, useToast } from '../../hooks/useToast';
+import { useCrudPageFeedback } from '../../hooks/useCrudPageFeedback';
 import { teamDiagramPath } from '../diagrams/spa-diagram-paths';
 
 export function Teams() {
   const { showToast } = useToast();
+  const { error, setError, clearError, reportFormError, toastError, runListLoad } =
+    useCrudPageFeedback();
   const { unit } = useUnit();
   const [teams, setTeams] = useState<TeamEntity[]>([]);
   const [rowsLoaded, setRowsLoaded] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTeam, setEditingTeam] = useState<TeamEntity | null>(null);
   const [form] = Form.useForm<{ name: string; description: string }>();
-  const [error, setError] = useState<string | null>(null);
 
   const unitId = unit?.id;
   const navigate = useNavigate();
@@ -31,15 +32,12 @@ export function Teams() {
 
   const loadTeams = async () => {
     if (!unitId) return;
-    setRowsLoaded(false);
-    try {
-      setTeams(await teamsApi.list(unitId));
-    } catch (err) {
-      console.error('Error loading teams:', err);
-      showToast(getErrorMessage(err), ToastVariant.Error);
-    } finally {
-      setRowsLoaded(true);
-    }
+    await runListLoad({
+      load: () => teamsApi.list(unitId),
+      onSuccess: setTeams,
+      setRowsLoaded,
+      logLabel: 'teams',
+    });
   };
 
   const rowIds = useMemo(() => new Set(teams.map((team) => team.id)), [teams]);
@@ -72,7 +70,7 @@ export function Teams() {
   const handleOpenDialog = (team?: TeamEntity) => {
     setEditingTeam(team ?? null);
     setIsDialogOpen(true);
-    setError(null);
+    clearError();
   };
 
   useEffect(() => {
@@ -87,11 +85,11 @@ export function Teams() {
     form.resetFields();
     setIsDialogOpen(false);
     setEditingTeam(null);
-    setError(null);
+    clearError();
   };
 
   const handleSubmit = async (values: { name: string; description: string }) => {
-    setError(null);
+    clearError();
 
     const effectiveUnitId = unitId || '';
     if (!effectiveUnitId) {
@@ -118,10 +116,7 @@ export function Teams() {
       showToast('Команда сохранена', ToastVariant.Success);
       loadTeams();
     } catch (err: unknown) {
-      const messageText = getErrorMessage(err, 'Не удалось сохранить команду');
-
-      setError(messageText);
-      showToast(messageText, ToastVariant.Error);
+      reportFormError(err, 'Не удалось сохранить команду');
     }
   };
 
@@ -135,8 +130,7 @@ export function Teams() {
       showToast('Команда удалена', ToastVariant.Success);
       loadTeams();
     } catch (err: unknown) {
-      const messageText = getErrorMessage(err, 'Не удалось удалить команду');
-      showToast(messageText, ToastVariant.Error);
+      toastError(err, 'Не удалось удалить команду');
     }
   };
 

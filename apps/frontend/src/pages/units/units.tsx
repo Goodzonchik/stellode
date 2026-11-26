@@ -5,8 +5,8 @@ import type { ColumnsType } from 'antd/es/table';
 import { unitsApi } from '../../api/units-api';
 import { LIST_HIGHLIGHT_ROW_CLASS } from '../../common/list-highlight/list-highlight-row-class';
 import { useListRowHighlight } from '../../common/list-highlight/use-list-row-highlight';
-import { getErrorMessage } from '../../utils/axios-error';
 import { ToastVariant, useToast } from '../../hooks/useToast';
+import { useCrudPageFeedback } from '../../hooks/useCrudPageFeedback';
 import type { UnitEntity } from '@stellode/models';
 import { useUnit } from '../../context/UnitContext';
 import { unitDiagramPath } from '../diagrams/spa-diagram-paths';
@@ -15,28 +15,26 @@ import './units.css';
 export function Units() {
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { error, setError, clearError, reportFormError, toastError, runListLoad } =
+    useCrudPageFeedback();
   const { unit: currentUnit, setUnit } = useUnit();
   const [units, setUnits] = useState<UnitEntity[]>([]);
   const [rowsLoaded, setRowsLoaded] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingUnit, setEditingUnit] = useState<UnitEntity | null>(null);
   const [form] = Form.useForm<{ name: string; description: string }>();
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadUnits();
   }, []);
 
   const loadUnits = async () => {
-    setRowsLoaded(false);
-    try {
-      setUnits(await unitsApi.list());
-    } catch (err) {
-      console.error('Error loading units:', err);
-      showToast(getErrorMessage(err), ToastVariant.Error);
-    } finally {
-      setRowsLoaded(true);
-    }
+    await runListLoad({
+      load: () => unitsApi.list(),
+      onSuccess: setUnits,
+      setRowsLoaded,
+      logLabel: 'units',
+    });
   };
 
   const rowIds = useMemo(() => new Set(units.map((unit) => unit.id)), [units]);
@@ -54,7 +52,7 @@ export function Units() {
   const handleOpenDialog = (unit?: UnitEntity) => {
     setEditingUnit(unit ?? null);
     setIsDialogOpen(true);
-    setError(null);
+    clearError();
   };
 
   useEffect(() => {
@@ -70,11 +68,11 @@ export function Units() {
     form.resetFields();
     setIsDialogOpen(false);
     setEditingUnit(null);
-    setError(null);
+    clearError();
   };
 
   const handleSubmit = async (values: { name: string; description: string }) => {
-    setError(null);
+    clearError();
 
     try {
       if (editingUnit) {
@@ -86,9 +84,7 @@ export function Units() {
       showToast('Юнит сохранён', ToastVariant.Success);
       loadUnits();
     } catch (err: unknown) {
-      const msg = getErrorMessage(err);
-      setError(msg);
-      showToast(msg, ToastVariant.Error);
+      reportFormError(err);
     }
   };
 
@@ -100,7 +96,7 @@ export function Units() {
       showToast('Юнит удалён', ToastVariant.Success);
       loadUnits();
     } catch (err: unknown) {
-      showToast(getErrorMessage(err), ToastVariant.Error);
+      toastError(err);
     }
   };
 

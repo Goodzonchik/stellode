@@ -60,7 +60,6 @@
 
 ### P2 — полезные упрощения
 
-- [ ] Общий паттерн load/error/toast для CRUD-страниц (`units`, `Teams`, `Features`, …) — без TanStack Query на первом шаге
 - [ ] Вынести разделяемую часть `releaseCompositionRules.ts` в `libs/models`; сверить с BE release path
 
 ### P3 — косметика / отложить
