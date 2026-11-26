@@ -60,8 +60,6 @@
 
 ### P3 — косметика / отложить
 
-- [x] Литералы `'draft'|'active'` → `VersionStatus` в diagram-коде
-- [x] Clipboard utils: из `diagrams/` в `common/` (используются в `tools/`)
 - [ ] Swagger codegen (~71 класс) — отложить, ROI низкий
 - [ ] TanStack Query на весь FE — отложить (смена парадигмы)
 - [ ] Тематическое слияние микромодулей accent/help — только если команда согласится ослабить one-export
