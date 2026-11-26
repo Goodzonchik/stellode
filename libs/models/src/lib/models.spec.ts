@@ -6,6 +6,7 @@ import {
   ApplicationVersionStatus,
   ComponentEntityType,
   deriveComponentVersionStatus,
+  isApplicationComponentStatus,
   FeatureEntityType,
   ImpactAnomalyCode,
   parseImpactAnalysisResult,
@@ -50,6 +51,19 @@ describe('allowedTargets', () => {
   it('is empty: ComponentVersion status is derived from HAS_COMPONENT', () => {
     expect(allowedTargets(VersionStatus.Draft)).toEqual([]);
     expect(allowedTargets(VersionStatus.Active)).toEqual([]);
+  });
+});
+
+describe('isApplicationComponentStatus', () => {
+  it('accepts active and deprecated', () => {
+    expect(isApplicationComponentStatus(VersionStatus.Active)).toBe(true);
+    expect(isApplicationComponentStatus(VersionStatus.Deprecated)).toBe(true);
+  });
+
+  it('rejects draft, unactive and unknown', () => {
+    expect(isApplicationComponentStatus(VersionStatus.Draft)).toBe(false);
+    expect(isApplicationComponentStatus(VersionStatus.Unactive)).toBe(false);
+    expect(isApplicationComponentStatus('unknown')).toBe(false);
   });
 });
 

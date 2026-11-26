@@ -1,5 +1,6 @@
 import {
   deriveComponentVersionStatus,
+  isApplicationComponentStatus,
   VersionStatus,
   type ApplicationComponentStatus,
   type VersionStatus as VersionStatusType,
@@ -17,9 +18,6 @@ type EdgeRow = {
   readonly currentStatus: string;
   readonly edgeStatus: string | null;
 };
-
-const isApplicationComponentStatus = (value: string): value is ApplicationComponentStatus =>
-  value === VersionStatus.Active || value === VersionStatus.Deprecated;
 
 const parseCurrentStatus = (raw: string): VersionStatusType => {
   if (raw === VersionStatus.Draft) return VersionStatus.Draft;

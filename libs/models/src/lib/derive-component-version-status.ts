@@ -4,6 +4,11 @@ export type ApplicationComponentStatus =
   | typeof VersionStatus.Active
   | typeof VersionStatus.Deprecated;
 
+export const isApplicationComponentStatus = (
+  value: string,
+): value is ApplicationComponentStatus =>
+  value === VersionStatus.Active || value === VersionStatus.Deprecated;
+
 export const deriveComponentVersionStatus = (
   current: VersionStatusType,
   applicationStatuses: readonly ApplicationComponentStatus[],

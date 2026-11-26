@@ -3,6 +3,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { randomUUID } from 'crypto';
 import {
   ApplicationVersionStatus,
+  isApplicationComponentStatus,
   parseVersionStatus,
   VersionStatus,
   type ApplicationComponentStatus,
@@ -49,9 +50,6 @@ const mapAppVersionRow = (node: GraphNode) => {
   const p = node.properties as Record<string, unknown>;
   return { id: (p.id as string) ?? node.id, ...p };
 };
-
-const isApplicationComponentStatus = (value: string): value is ApplicationComponentStatus =>
-  value === VersionStatus.Active || value === VersionStatus.Deprecated;
 
 const normalizeComponents = (
   components: ReleaseComponentSelectionDto[] | undefined,

@@ -57,10 +57,6 @@
   - Общий `useUnitCatalog` / wizard-скелет cascade unit→service→feature→FV
   - Риск: средний–высокий
 
-- [ ] **Один `isApplicationComponentStatus`**
-  - Дубль в `recompute-component-version-status.ts` и `application-version.service.ts`
-  - Экспорт рядом с типом в `@stellode/models`
-  - Риск: низкий
 
 ### P2 — полезные упрощения
 
