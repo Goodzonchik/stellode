@@ -1,16 +1,9 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { randomUUID } from 'crypto';
-import { parseVersionStatus, VersionStatus } from '@stellode/models';
-import { filterIdNames, isGraphNode, requireGraphNode } from '../common/graph-helpers';
+import { filterIdNames, isGraphNode, requireGraphNode, serializeCv } from '../common/graph-helpers';
 import { resolveComponentOrFeatureVersionString } from '../common/parent-version-uniqueness';
-import { Neo4jService, type GraphNode } from '../neo4j/neo4j.service';
+import { Neo4jService } from '../neo4j/neo4j.service';
 import type { CreateComponentVersionDto } from '@stellode/models';
-
-const serializeCv = (node: GraphNode) => {
-  const p = node.properties;
-  const status = parseVersionStatus(p.status ?? p.state) ?? VersionStatus.Unactive;
-  return { ...p, id: (p.id as string) ?? node.id, status };
-};
 
 const mapUsage = (raw: unknown) => {
   if (!Array.isArray(raw)) return [];

@@ -45,6 +45,17 @@ export const requireGraphNode = (value: unknown): GraphNode => {
   return value;
 };
 
+export type SerializedComponentVersion = Record<string, unknown> & {
+  id: string;
+  status: VersionStatusType;
+};
+
+export const serializeCv = (node: GraphNode): SerializedComponentVersion => {
+  const properties = node.properties;
+  const status = parseVersionStatus(properties.status ?? properties.state) ?? VersionStatus.Unactive;
+  return { id: (properties.id as string) ?? node.id, ...properties, status };
+};
+
 export interface ComponentVersionView {
   id: string;
   name: unknown;

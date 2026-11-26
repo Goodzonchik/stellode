@@ -26,6 +26,7 @@ import {
   toNewerVersionRow,
   isNewerVersionRow,
   isGraphNode,
+  serializeCv,
 } from '../common/graph-helpers';
 import {
   assertVersionUniqueWithinParent,
@@ -38,12 +39,6 @@ import { Neo4jService, type GraphNode } from '../neo4j/neo4j.service';
 const serializeNode = (node: GraphNode) => {
   const p = node.properties;
   return { id: (p.id as string) ?? node.id, ...p };
-};
-
-const serializeCv = (node: GraphNode) => {
-  const p = node.properties;
-  const status = parseVersionStatus(p.status ?? p.state) ?? VersionStatus.Unactive;
-  return { id: (p.id as string) ?? node.id, ...p, status };
 };
 
 const mapAppVersionRow = (node: GraphNode) => {
