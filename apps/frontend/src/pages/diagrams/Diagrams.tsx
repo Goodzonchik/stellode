@@ -133,7 +133,6 @@ import {
 } from './component-diagram-type-visibility';
 import { filterPaneMenuItemsForFeatureVersionReadOnly } from './filter-pane-menu-for-feature-version-read-only';
 import { featureVersionDiagramIsReadOnly } from './feature-version-diagram-is-read-only';
-import { mayBeginHubDiagramRelayout } from './may-begin-hub-diagram-relayout';
 import { CrossUnitDependsOnDialog } from './CrossUnitDependsOnDialog';
 import { buildBindFeatureComponentVersionsAddBody } from './build-bind-feature-component-versions-add-body';
 import { buildRaiseFeatureComponentVersionBody } from './build-raise-feature-component-version-body';
@@ -328,7 +327,7 @@ export function Diagrams() {
       visibility: UnitVisibilityState,
       direction: LayoutDirection,
     ) => {
-      if (base === null || !mayBeginHubDiagramRelayout(base)) return;
+      if (base === null) return;
       const isLatest = beginLayoutRequest();
       const laid = await layoutVisibleSubset(applyVisibility, base, visibility, direction);
       if (!isLatest()) return;
@@ -340,7 +339,7 @@ export function Diagrams() {
 
   const pushUnitDiagramFromBase = useCallback(async () => {
     const base = unitDiagramBaseRef.current;
-    if (base === null || !mayBeginHubDiagramRelayout(base)) return;
+    if (base === null) return;
     const isLatest = beginLayoutRequest();
     const laid = await layoutUnitDiagram(
       base.nodes,
@@ -355,7 +354,7 @@ export function Diagrams() {
 
   const pushTeamDiagramFromBase = useCallback(async () => {
     const base = teamDiagramBaseRef.current;
-    if (base === null || !mayBeginHubDiagramRelayout(base)) return;
+    if (base === null) return;
     const isLatest = beginLayoutRequest();
     const marked = hideTeamDiagramAnchor(base.nodes, base.edges);
     const filtered = applyTeamDiagramCodeOnlyVisibility(
@@ -386,7 +385,7 @@ export function Diagrams() {
 
   const pushFeatureVersionDiagramFromBase = useCallback(async () => {
     const base = featureVersionDiagramBaseRef.current;
-    if (base === null || !mayBeginHubDiagramRelayout(base)) return;
+    if (base === null) return;
     const isLatest = beginLayoutRequest();
     const compareDiff = featureVersionCompareDiffRef.current;
     const laid =
