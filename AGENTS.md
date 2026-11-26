@@ -10,12 +10,13 @@
 
 ## Стек технологий
 
-- **Монорепо**: Nx 22, npm workspaces
+- **Монорепо**: Nx 22, один корневой `package.json` (без npm workspaces)
 - **Backend**: NestJS 11, TypeScript 5.9
 - **Графовая БД**: Neo4j 5 (Bolt, Cypher, `neo4j-driver`)
 - **Frontend**: React 19, Vite 7, React Router 7, Ant Design, @xyflow/react, elkjs
-- **Тесты**: Jest 29
+- **Тесты**: Jest 30
 - **Инфраструктура**: Docker Compose
+- **Node.js**: >= 22.12.0
 
 ## Структура проекта
 

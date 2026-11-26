@@ -4,6 +4,8 @@ Thanks for contributing. This guide keeps the bar low and the process clear.
 
 ## Getting started
 
+Requires Node.js 22.12+ and npm.
+
 1. Fork the repository and create a branch from `main`.
 2. Copy `.env.example` to `.env`.
 3. Install dependencies: `npm install`

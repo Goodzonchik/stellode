@@ -8,7 +8,7 @@
 
 ## Стек
 
-- Монорепо: Nx, npm workspaces
+- Монорепо: Nx, один корневой `package.json` (без npm workspaces)
 - Backend: NestJS, TypeScript
 - Графовая БД: Neo4j 5 (Bolt)
 - Frontend: React, Vite, React Router, Ant Design, @xyflow/react, elkjs
@@ -16,7 +16,7 @@
 
 ## Требования
 
-- Node.js и npm
+- Node.js 22.12+ и npm
 - Docker (для Neo4j через Compose)
 
 Переменные окружения: скопируйте `.env.example` в `.env` (см. также [`CONTRIBUTING.md`](CONTRIBUTING.md)). По умолчанию Neo4j: `bolt://localhost:7687`, пользователь `neo4j`, пароль `stellode` (`NEO4J_URI` / `NEO4J_USER` / `NEO4J_PASSWORD`). Frontend: `VITE_API_BASE`.
