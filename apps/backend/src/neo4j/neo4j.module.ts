@@ -1,12 +1,11 @@
 import { Global, Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigService } from '@nestjs/config';
 import neo4j from 'neo4j-driver';
 import { Neo4jService } from './neo4j.service';
 import { Neo4jSchemaService } from './neo4j-schema.service';
 
 @Global()
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true })],
   providers: [
     Neo4jService,
     Neo4jSchemaService,

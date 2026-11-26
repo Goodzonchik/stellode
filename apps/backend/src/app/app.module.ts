@@ -18,8 +18,8 @@ import { StatusWarningModule } from '../status-warning/status-warning.module';
 
 @Module({
   imports: [
-    Neo4jModule,
     ConfigModule.forRoot({ isGlobal: true }),
+    Neo4jModule,
     EventEmitterModule.forRoot(),
     FeatureModule,
     FeatureVersionModule,
