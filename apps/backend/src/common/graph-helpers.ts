@@ -1,12 +1,12 @@
 import { parseVersionStatus, VersionStatus, type VersionStatus as VersionStatusType } from '@stellode/models';
 import type { GraphNode } from '../neo4j/neo4j.service';
 
-export interface IdName {
+type IdName = {
   id: string;
   name: string;
-}
+};
 
-export const isIdName = (v: unknown): v is IdName =>
+const isIdName = (v: unknown): v is IdName =>
   typeof v === 'object' &&
   v !== null &&
   typeof (v as IdName).id === 'string' &&

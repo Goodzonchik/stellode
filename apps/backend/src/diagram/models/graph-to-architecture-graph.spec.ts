@@ -1,9 +1,26 @@
-import type { GraphNode } from '../../neo4j/neo4j.service';
-import {
-  diagramRowsToGraphRecords,
-  graphQueryResultToArchitectureGraph,
-  type DiagramEdgeRow,
-} from './graph-to-architecture-graph';
+import type { GraphNode, GraphQueryResult } from '../../neo4j/neo4j.service';
+import { graphQueryResultToArchitectureGraph } from './graph-to-architecture-graph';
+
+type DiagramEdgeRow = {
+  id?: string | null;
+  from: string;
+  to: string;
+  label: string;
+  properties?: Record<string, unknown> | null;
+};
+
+const diagramRowsToGraphRecords = (
+  rows: readonly { node: GraphNode | null; relationship: DiagramEdgeRow | null }[],
+): GraphQueryResult => ({
+  records: rows.map((row) => ({
+    get(key: string): unknown {
+      if (key === 'node') return row.node;
+      if (key === 'relationship') return row.relationship;
+      return null;
+    },
+    keys: (): string[] => ['node', 'relationship'],
+  })),
+});
 
 const unitNode = (uuid: string): GraphNode => ({
   id: uuid,

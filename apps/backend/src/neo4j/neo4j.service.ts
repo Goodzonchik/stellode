@@ -7,7 +7,7 @@ export interface GraphNode {
   properties: Record<string, unknown>;
 }
 
-export interface GraphEdge {
+interface GraphEdge {
   id: string;
   label: string;
   from: string;

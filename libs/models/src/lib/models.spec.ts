@@ -1,5 +1,4 @@
 import {
-  allowedTargets,
   allowedTargetsFeatureVersion,
   ApplicationEntityType,
   ApplicationVersionEntityType,
@@ -44,13 +43,6 @@ describe('parseVersionStatus', () => {
 
   it('returns null for unknown', () => {
     expect(parseVersionStatus('unknown')).toBeNull();
-  });
-});
-
-describe('allowedTargets', () => {
-  it('is empty: ComponentVersion status is derived from HAS_COMPONENT', () => {
-    expect(allowedTargets(VersionStatus.Draft)).toEqual([]);
-    expect(allowedTargets(VersionStatus.Active)).toEqual([]);
   });
 });
 

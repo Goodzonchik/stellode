@@ -20,7 +20,7 @@ export const isApplicationStatusLockedToActive = (
   lifecycleStatus: VersionStatusType,
 ): boolean => lifecycleStatus === VersionStatus.Draft;
 
-export const demoteSameComponentRows = (
+const demoteSameComponentRows = (
   rows: readonly CompositionApplicationStatusRow[],
   componentId: string,
   exceptComponentVersionId: string,
@@ -106,14 +106,11 @@ export const componentIdsWithoutActiveRow = (
     .map(([componentId]) => componentId);
 };
 
-export type ActiveCompositionSelectionRow = {
-  componentId: string;
-  componentVersionId: string;
-  applicationStatus: ApplicationComponentStatus;
-};
-
 export const findDuplicateActiveComponentIds = (
-  rows: readonly ActiveCompositionSelectionRow[],
+  rows: readonly Pick<
+    CompositionApplicationStatusRow,
+    'componentId' | 'componentVersionId' | 'applicationStatus'
+  >[],
 ): string[] => {
   const activeByComponent = new Map<string, string>();
   const duplicates = new Set<string>();

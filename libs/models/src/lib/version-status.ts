@@ -21,8 +21,6 @@ export const parseVersionStatus = (raw: unknown): VersionStatus | null => {
   return versionStatusValues.includes(raw as VersionStatus) ? (raw as VersionStatus) : null;
 };
 
-export const allowedTargets = (_from: VersionStatus): VersionStatus[] => [];
-
 export const allowedTargetsFeatureVersion = (from: VersionStatus): VersionStatus[] =>
   Array.from(featureVersionTransitions[from] ?? []);
 

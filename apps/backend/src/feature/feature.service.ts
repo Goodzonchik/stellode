@@ -1,5 +1,9 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { randomUUID } from 'crypto';
+import {
+  FeatureEntityType,
+  type FeatureWithServices,
+} from '@stellode/models';
 import { mergeCypherSetParts, optionalDescriptionSet } from '../common/set-parts';
 import { assertUnitScopedNameUnique, normalizeEntityName } from '../common/entity-name';
 import { filterIdNames, idNamesFromProjectRecords, isGraphNode } from '../common/graph-helpers';
@@ -17,15 +21,6 @@ interface UpdateFeatureData {
   name?: string;
   description?: string;
   serviceIds?: string[];
-}
-
-export interface FeatureWithServices {
-  id: string;
-  unitId: string;
-  name: string;
-  description: string | null;
-  type: string;
-  services: Array<{ id: string; name: string }>;
 }
 
 type ValidateFeatureNameOnUpdateArgs = {
@@ -66,7 +61,7 @@ const mapNodeToFeature = (node: GraphNode): FeatureWithServices => {
       properties.description === null || properties.description === undefined
         ? null
         : String(properties.description),
-    type: String(properties.type ?? ''),
+    type: FeatureEntityType.Feature,
     services: [],
   };
 };

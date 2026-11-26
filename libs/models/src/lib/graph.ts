@@ -50,18 +50,13 @@ export interface Node {
   draftVersionNumber?: number;
 }
 
-export interface RelationshipWithProperties<P extends Record<string, unknown> = Record<string, unknown>> {
+export interface ArchitectureRelationship {
   type: string;
   from: string;
   to: string;
   id: string;
-  properties?: P;
+  properties?: Record<string, unknown>;
 }
-
-export type ArchitectureRelationship = RelationshipWithProperties<Record<string, unknown>>;
-
-export type Relationship<P extends Record<string, unknown> = Record<string, unknown>> =
-  RelationshipWithProperties<P>;
 
 export interface ArchitectureGraph {
   nodes: Node[];
@@ -100,10 +95,6 @@ export interface ViewNode {
   style?: { width?: number; height?: number };
 }
 
-export type ViewEdgeMarkerEnd = {
-  readonly type: 'arrowclosed';
-};
-
 export interface ViewEdge {
   id: string;
   source: string;
@@ -122,7 +113,7 @@ export interface ViewEdge {
   providerFeatureId?: string;
   status?: string;
   style?: { stroke?: string; strokeWidth?: number };
-  markerEnd?: ViewEdgeMarkerEnd;
+  markerEnd?: { readonly type: 'arrowclosed' };
   pathOffset?: number;
   data?: { readonly pathOffset?: number };
 }

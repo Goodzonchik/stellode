@@ -1,21 +1,9 @@
 import type { ArchitectureGraph, ArchitectureRelationship, Label } from './graph';
 
-export const DiagramType = {
-  Team: 'team',
-  Unit: 'unit',
-  CrossUnit: 'crossUnit',
-  Application: 'application',
-  Service: 'service',
-  Feature: 'feature',
-  Component: 'component',
-} as const;
-
-export type DiagramType = (typeof DiagramType)[keyof typeof DiagramType];
-
 export type LayerOrder = readonly Label[];
 
 export const DIAGRAM_LAYER_ORDERS = {
-  [DiagramType.Team]: [
+  team: [
     'Team',
     'Component',
     'ComponentVersion',
@@ -25,7 +13,7 @@ export const DIAGRAM_LAYER_ORDERS = {
     'Application',
     'ApplicationVersion',
   ],
-  [DiagramType.Unit]: [
+  unit: [
     'Unit',
     'Team',
     'Component',
@@ -35,10 +23,10 @@ export const DIAGRAM_LAYER_ORDERS = {
     'Application',
     'ApplicationVersion',
   ],
-  [DiagramType.CrossUnit]: ['Unit'],
-  [DiagramType.Application]: ['Application', 'ApplicationVersion', 'ComponentVersion', 'Component', 'Team'],
-  [DiagramType.Service]: ['Unit', 'Service', 'Feature', 'Component'],
-  [DiagramType.Feature]: [
+  crossUnit: ['Unit'],
+  application: ['Application', 'ApplicationVersion', 'ComponentVersion', 'Component', 'Team'],
+  service: ['Unit', 'Service', 'Feature', 'Component'],
+  feature: [
     'Unit',
     'Team',
     'Application',
@@ -49,8 +37,8 @@ export const DIAGRAM_LAYER_ORDERS = {
     'Feature',
     'Service',
   ],
-  [DiagramType.Component]: ['Team', 'Component', 'ComponentVersion', 'FeatureVersion'],
-} as const satisfies Record<DiagramType, LayerOrder>;
+  component: ['Team', 'Component', 'ComponentVersion', 'FeatureVersion'],
+} as const satisfies Record<string, LayerOrder>;
 
 const layerIndexForLabels = (labels: readonly Label[], order: LayerOrder): number | undefined => {
   for (let i = 0; i < order.length; i++) {

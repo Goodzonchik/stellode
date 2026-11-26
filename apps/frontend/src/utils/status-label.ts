@@ -23,16 +23,6 @@ export const releaseStatusLabel = (status: ApplicationVersionStatus): string => 
   return labels[status];
 };
 
-export const componentInReleaseStatusLabel = (status: 'active' | 'deprecated'): string => {
-  if (status === 'active') return 'Активен';
-  return 'Устарел';
-};
-
-export const serviceStatusLabel = (status: string | undefined): string => {
-  if (status === 'archive') return 'В архиве';
-  return 'Активна';
-};
-
 export const versionStatusLabelFromRaw = (raw: string | undefined): string => {
   if (raw === VersionStatusConst.Draft) return 'Черновик';
   if (raw === VersionStatusConst.Active) return 'Активна';

@@ -1,7 +1,7 @@
 import type { ArchitectureGraph, ArchitectureRelationship, Label, Node } from '@stellode/models';
 import type { GraphNode, GraphQueryResult } from '../../neo4j/neo4j.service';
 
-export interface DiagramEdgeRow {
+interface DiagramEdgeRow {
   id?: string | null;
   from: string;
   to: string;
@@ -166,19 +166,6 @@ export const graphQueryResultToArchitectureGraph = (
     relationships: Array.from(relationshipsMap.values()),
   };
 };
-
-export const diagramRowsToGraphRecords = (
-  rows: readonly { node: GraphNode | null; relationship: DiagramEdgeRow | null }[],
-): GraphQueryResult => ({
-  records: rows.map((row) => ({
-    get(key: string): unknown {
-      if (key === 'node') return row.node;
-      if (key === 'relationship') return row.relationship;
-      return null;
-    },
-    keys: (): string[] => ['node', 'relationship'],
-  })),
-});
 
 export const mergeGraphDiagramResults = (
   primary: GraphQueryResult,

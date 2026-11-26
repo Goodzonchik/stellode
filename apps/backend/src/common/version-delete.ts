@@ -8,7 +8,7 @@ export const BlockingRelationDirection = {
 export type BlockingRelationDirection =
   (typeof BlockingRelationDirection)[keyof typeof BlockingRelationDirection];
 
-export interface BlockingRelation {
+interface BlockingRelation {
   readonly relationType: string;
   readonly direction: BlockingRelationDirection;
   readonly targetId: string;
