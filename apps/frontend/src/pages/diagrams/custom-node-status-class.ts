@@ -1,4 +1,9 @@
-const mutedVisualStatuses = new Set(['deprecated', 'unactive']);
+import { VersionStatus } from '@stellode/models';
+
+const mutedVisualStatuses = new Set<string>([
+  VersionStatus.Deprecated,
+  VersionStatus.Unactive,
+]);
 
 const statusClassPart = (prefix: string, status: string | undefined): string => {
   if (status === undefined || mutedVisualStatuses.has(status)) return '';

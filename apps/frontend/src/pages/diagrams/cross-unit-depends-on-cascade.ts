@@ -1,3 +1,5 @@
+import { VersionStatus } from '@stellode/models';
+
 export type CrossUnitCascadeOption = {
   readonly value: string;
   readonly label: string;
@@ -12,7 +14,11 @@ export type CrossUnitComponentVersionLite = {
   readonly applicationName?: string;
 };
 
-const allowedTargetStatuses = new Set(['active', 'deprecated', 'draft']);
+const allowedTargetStatuses = new Set<string>([
+  VersionStatus.Active,
+  VersionStatus.Deprecated,
+  VersionStatus.Draft,
+]);
 
 export const pickSoleOptionValue = (
   options: ReadonlyArray<CrossUnitCascadeOption>,

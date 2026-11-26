@@ -4,7 +4,7 @@ import { ToastVariant, useToast } from '../../hooks/useToast';
 import type { LayoutDirection } from './layout-direction';
 import { MermaidIcon } from './MermaidIcon';
 import { viewDiagramToMermaid } from './view-diagram-to-mermaid';
-import { writeClipboardText } from './write-clipboard-text';
+import { writeClipboardText } from '../../common/write-clipboard-text';
 import './CopyMermaidDiagramButton.css';
 
 type CopyMermaidDiagramButtonProps = {

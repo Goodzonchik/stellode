@@ -1,3 +1,4 @@
+import { VersionStatus } from '@stellode/models';
 import type { FeatureVersionLegendRow } from './feature-version-legend-row';
 
 const versionNumberOf = (row: FeatureVersionLegendRow): number =>
@@ -8,7 +9,7 @@ const versionNumberOf = (row: FeatureVersionLegendRow): number =>
 export const resolveDefaultFeatureVersionId = (
   rows: readonly FeatureVersionLegendRow[],
 ): string | null => {
-  const active = rows.find((row) => row.status === 'active');
+  const active = rows.find((row) => row.status === VersionStatus.Active);
   if (active) return active.id;
   if (rows.length === 0) return null;
   return rows.reduce((best, row) =>

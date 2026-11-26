@@ -1,4 +1,4 @@
-import type { ViewEdge, ViewNode } from '@stellode/models';
+import { VersionStatus, type ViewEdge, type ViewNode } from '@stellode/models';
 import type { ApplicationGrouping, ApplicationMemberships } from './application-grouping-types';
 import { normalizeDiagramNodeTypeKey } from './diagram-node-type-key';
 import { isComponentLikeType } from './is-component-like-type';
@@ -63,7 +63,9 @@ const resolveApplicationContainer = (
 };
 
 const preferActive = (previous: string | undefined, next: string | undefined): string | undefined =>
-  previous === 'active' || next === 'active' ? 'active' : (next ?? previous);
+  previous === VersionStatus.Active || next === VersionStatus.Active
+    ? VersionStatus.Active
+    : (next ?? previous);
 
 const withMembership = (
   memberships: ReadonlyMap<string, ApplicationMemberships>,

@@ -21,7 +21,7 @@ import { resolveApplicationCompositionVersionId } from './resolve-application-co
 import styles from './ApplicationComposition.module.css';
 
 const statusLabel = (status: ApplicationVersionCompositionItem['status']): string =>
-  status === VersionStatus.Deprecated ? 'deprecated' : 'active';
+  status === VersionStatus.Deprecated ? VersionStatus.Deprecated : VersionStatus.Active;
 
 const statusColor = (status: ApplicationVersionCompositionItem['status']): string =>
   status === VersionStatus.Deprecated ? 'orange' : 'green';
@@ -29,10 +29,12 @@ const statusColor = (status: ApplicationVersionCompositionItem['status']): strin
 const compositionWarningKind = (
   row: ApplicationVersionCompositionItem,
   isCurrent: boolean,
-): 'deprecated' | 'unactive' | null => {
-  if (isCurrent && row.status === VersionStatus.Deprecated) return 'deprecated';
-  if (!isCurrent && row.componentVersionStatus === VersionStatus.Unactive) return 'unactive';
-  if (!isCurrent && row.status === VersionStatus.Deprecated) return 'deprecated';
+): typeof VersionStatus.Deprecated | typeof VersionStatus.Unactive | null => {
+  if (isCurrent && row.status === VersionStatus.Deprecated) return VersionStatus.Deprecated;
+  if (!isCurrent && row.componentVersionStatus === VersionStatus.Unactive) {
+    return VersionStatus.Unactive;
+  }
+  if (!isCurrent && row.status === VersionStatus.Deprecated) return VersionStatus.Deprecated;
   return null;
 };
 

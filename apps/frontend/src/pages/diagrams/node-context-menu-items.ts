@@ -1,4 +1,4 @@
-import type { ArchitectureGraph } from '@stellode/models';
+import { VersionStatus, type ArchitectureGraph } from '@stellode/models';
 import type { DiagramMenuItem } from './diagram-context-menu.config';
 import { resolveImpactHttpTarget } from './resolve-impact-api-target';
 import { resolveOpenInListTarget } from './resolve-open-in-list-target';
@@ -49,7 +49,8 @@ export const buildNodeContextMenuItems = (p: NodeMenuParams): DiagramMenuItem[] 
   if (p.entity !== 'feature-version' || !p.graph || !p.diagramAnchorId) return items;
   const anchor = p.graph.nodes.find((n) => n.id === p.diagramAnchorId);
   const clicked = p.graph.nodes.find((n) => n.id === p.nodeId);
-  const draft = anchor?.labels.includes('FeatureVersion') && anchor.status === 'draft';
+  const draft =
+    anchor?.labels.includes('FeatureVersion') && anchor.status === VersionStatus.Draft;
   const cv = clicked?.labels.includes('ComponentVersion');
   if (!draft || !cv || p.isFlatComponent === true) return items;
   items.push({
@@ -62,7 +63,7 @@ export const buildNodeContextMenuItems = (p: NodeMenuParams): DiagramMenuItem[] 
     label: 'Связь с другим юнитом',
     action: 'crossUnitDependsOn',
   });
-  if (clicked.status !== 'draft') {
+  if (clicked.status !== VersionStatus.Draft) {
     items.push({
       id: 'fv-raise-version',
       label: 'Поднять версию',

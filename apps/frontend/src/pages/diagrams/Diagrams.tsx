@@ -73,6 +73,7 @@ import {
   type ArchitectureGraph,
   type ImpactQueryMode,
   ImpactQueryMode as ImpactQueryModeConst,
+  VersionStatus,
   type ViewEdge,
   type ViewNode,
 } from '@stellode/models';
@@ -473,7 +474,7 @@ export function Diagrams() {
     return (
       anchor !== undefined &&
       anchor.labels.includes('FeatureVersion') &&
-      anchor.status === 'draft'
+      anchor.status === VersionStatus.Draft
     );
   }, [entity, diagramAnchorId, archGraph, featureVersionCompareEnabled]);
 
@@ -484,9 +485,9 @@ export function Diagrams() {
 
   const sortedFeatureLegendRows = useMemo(() => {
     const statusRank = (status: string): number => {
-      if (status === 'draft') return 0;
-      if (status === 'active') return 1;
-      if (status === 'deprecated') return 2;
+      if (status === VersionStatus.Draft) return 0;
+      if (status === VersionStatus.Active) return 1;
+      if (status === VersionStatus.Deprecated) return 2;
       return 3;
     };
     return [...featureVersionsForLegend].sort((left, right) => {

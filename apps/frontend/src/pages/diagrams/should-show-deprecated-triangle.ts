@@ -1,6 +1,8 @@
-import type { ViewNode } from '@stellode/models';
+import { VersionStatus, type ViewNode } from '@stellode/models';
 
-export type StatusWarningTriangleKind = 'deprecated' | 'unactive';
+export type StatusWarningTriangleKind =
+  | typeof VersionStatus.Deprecated
+  | typeof VersionStatus.Unactive;
 
 const hasVersionMarker = (data: ViewNode['data']): boolean =>
   data.actualVersion !== undefined || data.actualVersionNumber !== undefined;
@@ -10,8 +12,8 @@ export const statusWarningTriangleKind = (
 ): StatusWarningTriangleKind | null => {
   if (data.diffStatus === 'added' || data.diffStatus === 'removed') return null;
   if (!hasVersionMarker(data)) return null;
-  if (data.applicationStatus === 'deprecated') return 'deprecated';
-  if (data.status === 'unactive') return 'unactive';
+  if (data.applicationStatus === VersionStatus.Deprecated) return VersionStatus.Deprecated;
+  if (data.status === VersionStatus.Unactive) return VersionStatus.Unactive;
   return null;
 };
 

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Button } from 'antd';
 import { runMermaidInContainer } from '../../common/run-mermaid-in-container';
 import { ToastVariant, useToast } from '../../hooks/useToast';
-import { readClipboardText } from '../diagrams/read-clipboard-text';
+import { readClipboardText } from '../../common/read-clipboard-text';
 import { readMermaidToolsSession } from './read-mermaid-tools-session';
 import { writeMermaidToolsSession } from './write-mermaid-tools-session';
 import './MermaidToolsPage.css';

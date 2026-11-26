@@ -1,4 +1,4 @@
-import type { ViewEdge, ViewNode } from '@stellode/models';
+import { VersionStatus, type ViewEdge, type ViewNode } from '@stellode/models';
 import { normalizeDiagramNodeTypeKey } from './diagram-node-type-key';
 import { isComponentLikeType } from './is-component-like-type';
 
@@ -19,7 +19,7 @@ const isApplicationType = (type: string | undefined): boolean =>
   type === 'app' || type === 'application';
 
 const isProdHasComponentStatus = (status: string | undefined): boolean =>
-  status === 'active' || status === 'deprecated';
+  status === VersionStatus.Active || status === VersionStatus.Deprecated;
 
 const versionToApplication = (
   edges: readonly ViewEdge[],

@@ -51,7 +51,7 @@ const featureVersionDraftReadyMap = (graph: ArchitectureGraph): Map<string, bool
   }
   const out = new Map<string, boolean>();
   for (const n of graph.nodes) {
-    if (!n.labels.includes('FeatureVersion') || n.status !== 'draft') continue;
+    if (!n.labels.includes('FeatureVersion') || n.status !== VersionStatus.Draft) continue;
     const cvIds = usesByFv.get(n.id) ?? [];
     const ready =
       cvIds.length === 0 ||
@@ -94,7 +94,7 @@ export const graphNodeToViewData = (node: Node): ViewNode['data'] => {
 
 const graphNodeToViewNode = (node: Node, fvReady: Map<string, boolean>): ViewNode => {
   const base = graphNodeToViewData(node);
-  const isFvDraft = node.labels.includes('FeatureVersion') && node.status === 'draft';
+  const isFvDraft = node.labels.includes('FeatureVersion') && node.status === VersionStatus.Draft;
   const data =
     isFvDraft ? { ...base, readyToProduction: fvReady.get(node.id) ?? false } : base;
   return { id: node.id, type: 'custom', draggable: true, position: { x: 0, y: 0 }, data };

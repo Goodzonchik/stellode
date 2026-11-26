@@ -1,7 +1,7 @@
 import { memo, useMemo, type ReactNode } from 'react';
 import { Handle, type Node, type NodeProps } from '@xyflow/react';
 import { Tooltip } from 'antd';
-import type { ViewNode } from '@stellode/models';
+import { VersionStatus, type ViewNode } from '@stellode/models';
 import DiagramNodeTypeIcon from './diagram-node-type-icon';
 import { normalizeDiagramNodeTypeKey } from './diagram-node-type-key';
 import { versionStatusLabelFromRaw } from '../../utils/status-label';
@@ -63,9 +63,9 @@ const buildTooltipTitle = (data: CustomNodeData): ReactNode => {
   }
   if (data.applicationStatus !== undefined) {
     const appStatus =
-      data.applicationStatus === 'active'
+      data.applicationStatus === VersionStatus.Active
         ? 'Активен'
-        : data.applicationStatus === 'deprecated'
+        : data.applicationStatus === VersionStatus.Deprecated
           ? 'Устарел'
           : data.applicationStatus;
     lines.push(

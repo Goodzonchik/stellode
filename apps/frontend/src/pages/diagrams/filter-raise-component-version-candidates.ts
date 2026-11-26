@@ -1,4 +1,10 @@
-const RAISE_CANDIDATE_STATUSES = new Set(['draft', 'active', 'deprecated']);
+import { VersionStatus } from '@stellode/models';
+
+const RAISE_CANDIDATE_STATUSES = new Set<string>([
+  VersionStatus.Draft,
+  VersionStatus.Active,
+  VersionStatus.Deprecated,
+]);
 
 export type RaiseComponentVersionCandidate = {
   readonly id: string;
