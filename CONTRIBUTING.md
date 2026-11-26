@@ -39,4 +39,4 @@ Add or update tests for behavior you change. Prefer covering services and pure h
 
 ## License
 
-By contributing, you agree that your contributions are licensed under the [Apache License 2.0](LICENSE.md).
+By contributing, you agree that your contributions are licensed under the [Apache License 2.0](LICENSE).
