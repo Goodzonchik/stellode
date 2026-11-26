@@ -20,12 +20,18 @@ export class ApplicationVersionCompositionItemResponse
   @ApiPropertyOptional({ type: String, nullable: true })
   teamName!: string | null;
 
-  @ApiProperty({ type: String })
+  @ApiProperty({ type: String, description: 'Строка ComponentVersion.version' })
   componentVersion!: string;
 
-  @ApiProperty({ enum: [VersionStatus.Active, VersionStatus.Deprecated] })
+  @ApiProperty({
+    enum: [VersionStatus.Active, VersionStatus.Deprecated],
+    description: 'Прикладной HAS_COMPONENT.status',
+  })
   status!: typeof VersionStatus.Active | typeof VersionStatus.Deprecated;
 
-  @ApiProperty({ enum: Object.values(VersionStatus) })
+  @ApiProperty({
+    enum: Object.values(VersionStatus),
+    description: 'Глобальный ComponentVersion.status (маркер unactive / deprecated на составе previous)',
+  })
   componentVersionStatus!: VersionStatus;
 }

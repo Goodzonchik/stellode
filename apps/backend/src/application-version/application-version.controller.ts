@@ -1,6 +1,7 @@
-import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiOkResponse, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ReleasePreviewResponseBody } from '../swagger/release-preview-response-body';
 import { ApplicationVersionCompositionResponse } from '../swagger/application-version-composition-response';
+import { ApplicationVersionRowResponse } from '../swagger/application-version-row-response';
 import {
   Controller,
   Post,
@@ -35,7 +36,14 @@ export class ApplicationVersionController {
     );
   }
 
-  @ApiOperation({ summary: 'Переименовать version у ApplicationVersion(current)' })
+  @ApiOperation({
+    summary: 'Переименовать version у ApplicationVersion(current)',
+    description:
+      'Нормализация: trim; пустая строка → 400. Допустимо только для статуса current (иначе 400). Уникальность version в пределах Application → 409. Меняется только version; versionNumber, состав и статус не трогаются.',
+  })
+  @ApiOkResponse({ type: ApplicationVersionRowResponse })
+  @ApiResponse({ status: 400, description: 'Пустая строка или версия не current' })
+  @ApiResponse({ status: 409, description: 'Конфликт уникальности version' })
   @Patch(':id')
   async renameVersion(@Param('id') id: string, @Body() body: RenameApplicationVersionRequest) {
     try {
@@ -50,8 +58,12 @@ export class ApplicationVersionController {
     }
   }
 
-  @ApiOperation({ summary: 'Read-only состав ApplicationVersion (HAS_COMPONENT)' })
+  @ApiOperation({
+    summary: 'Read-only состав ApplicationVersion (HAS_COMPONENT)',
+    description: 'Снимок HAS_COMPONENT выбранной ApplicationVersion.',
+  })
   @ApiOkResponse({ type: ApplicationVersionCompositionResponse })
+  @ApiResponse({ status: 404, description: 'ApplicationVersion не найдена' })
   @Get(':id/composition')
   async getComposition(@Param('id') id: string) {
     try {

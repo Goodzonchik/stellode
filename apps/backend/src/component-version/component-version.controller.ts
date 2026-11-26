@@ -1,7 +1,8 @@
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { ApiOkResponse, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Controller, Get, Post, Body, Param } from '@nestjs/common';
 import { ComponentVersionService } from './component-version.service';
 import { StatusWarningService } from '../status-warning/status-warning.service';
+import { ComponentVersionStatusWarningResponse } from '../swagger/component-version-status-warning-response';
 import { ComponentVersionsForUnitRequest } from '../swagger/component-versions-for-unit-request';
 import { CreateComponentVersionRequest } from '../swagger/create-component-version-request';
 import { ListComponentVersionsRequest } from '../swagger/list-component-versions-request';
@@ -14,7 +15,13 @@ export class ComponentVersionController {
     private readonly statusWarningService: StatusWarningService,
   ) {}
 
-  @ApiOperation({ summary: 'Детали модалки предупреждения deprecated/unactive' })
+  @ApiOperation({
+    summary: 'Детали модалки предупреждения deprecated/unactive',
+    description:
+      'Связанные applications/teams/components/features/services. Cross-unit DEPENDS_ON учитываются только при Component.isPublic = true у поставщика.',
+  })
+  @ApiOkResponse({ type: ComponentVersionStatusWarningResponse })
+  @ApiResponse({ status: 404, description: 'ComponentVersion не найдена' })
   @Get(':id/status-warning')
   statusWarning(@Param('id') id: string) {
     return this.statusWarningService.statusWarningForComponentVersion(id);

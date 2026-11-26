@@ -11,6 +11,9 @@ export class RaiseFeatureComponentVersionResponse implements RaiseFeatureCompone
   @ApiProperty({ type: String })
   applicationId!: string;
 
-  @ApiProperty({ type: Boolean })
+  @ApiProperty({
+    type: Boolean,
+    description: 'true, если ComponentVersion создана в этом запросе',
+  })
   createdComponentVersion!: boolean;
 }

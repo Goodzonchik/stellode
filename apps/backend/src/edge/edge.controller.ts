@@ -1,4 +1,4 @@
-import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiOkResponse, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CreateEdgeResponse } from '../swagger/create-edge-response';
 import { Body, Controller, HttpException, HttpStatus, Post } from '@nestjs/common';
 import { isDatabaseConnectivityError } from '../common/database-connectivity';
@@ -25,7 +25,16 @@ export class EdgeController {
     }
   }
 
-  @ApiOperation({ summary: 'Удалить DEPENDS_ON копии FeatureVersion(draft)' })
+  @ApiOperation({
+    summary: 'Удалить DEPENDS_ON копии FeatureVersion(draft)',
+    description:
+      'Physical DELETE найденного DEPENDS_ON по ключу концов и context. Если FV отсутствует или не draft → 400; если ребро с данным ключом не найдено → 400. Исторические копии других FV не трогаются.',
+  })
+  @ApiOkResponse({ schema: { type: 'object', properties: { ok: { type: 'boolean' } } } })
+  @ApiResponse({
+    status: 400,
+    description: 'FV отсутствует / не draft, либо ребро с ключом не найдено',
+  })
   @Post('depends-on/delete')
   async deleteDependsOnFromFeatureVersions(
     @Body() body: DeleteDependsOnFromFeatureVersionsRequest,

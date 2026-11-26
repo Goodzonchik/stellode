@@ -18,6 +18,9 @@ export class ApplicationVersionCompositionResponse implements ApplicationVersion
   @ApiProperty({ enum: [ApplicationVersionStatus.Current, ApplicationVersionStatus.Previous] })
   status!: typeof ApplicationVersionStatus.Current | typeof ApplicationVersionStatus.Previous;
 
-  @ApiProperty({ type: [ApplicationVersionCompositionItemResponse] })
+  @ApiProperty({
+    type: [ApplicationVersionCompositionItemResponse],
+    description: 'Строки HAS_COMPONENT состава версии',
+  })
   items!: ApplicationVersionCompositionItemResponse[];
 }

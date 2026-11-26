@@ -47,7 +47,7 @@ npm run db:reset       # опционально: очистка + демо-seed
 
 - [`docs/index.md`](docs/index.md) — входная точка
 - [`docs/spec.md`](docs/spec.md) — каноническая модель графа
-- [`docs/api.md`](docs/api.md) — API
+- HTTP API — Swagger `/api/docs` (backend)
 - [`docs/diagrams-api.md`](docs/diagrams-api.md) — эндпоинты диаграмм
 - [`docs/aggregates-api.md`](docs/aggregates-api.md) — состав услуги (`AGGREGATES`)
 - [`docs/diagrams-frontend.md`](docs/diagrams-frontend.md) — диаграммы на фронте
