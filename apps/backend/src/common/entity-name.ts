@@ -45,6 +45,43 @@ export const assertNameImmutable = (name: string | undefined, entity: string): v
   }
 };
 
+type AssertNameUnchangedThenUniqueBase = {
+  readonly neo4jService: Neo4jService;
+  readonly label: EntityLabel;
+  readonly entityId: string;
+  readonly name: string;
+  readonly storedName: string;
+};
+
+type AssertNameUnchangedThenUniqueArgs =
+  | (AssertNameUnchangedThenUniqueBase & { readonly scope: 'global' })
+  | (AssertNameUnchangedThenUniqueBase & { readonly scope: 'unit'; readonly unitId: string });
+
+export const assertNameUnchangedThenUnique = async (
+  args: AssertNameUnchangedThenUniqueArgs,
+): Promise<void> => {
+  const normalized = normalizeEntityName(args.name);
+  if (normalized !== normalizeEntityName(args.storedName)) {
+    throw new BadRequestException(`${args.label} name is immutable`);
+  }
+  if (args.scope === 'global') {
+    await assertGlobalNameUnique({
+      neo4jService: args.neo4jService,
+      label: args.label,
+      name: normalized,
+      excludeId: args.entityId,
+    });
+    return;
+  }
+  await assertUnitScopedNameUnique({
+    neo4jService: args.neo4jService,
+    label: args.label,
+    unitId: args.unitId,
+    name: normalized,
+    excludeId: args.entityId,
+  });
+};
+
 export const assertGlobalNameUnique = async ({
   neo4jService,
   label,

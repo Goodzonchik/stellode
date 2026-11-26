@@ -1,19 +1,20 @@
 import {
   ApplicationVersionStatus as ApplicationVersionStatusConst,
   VersionStatus as VersionStatusConst,
+  parseVersionStatus,
   type ApplicationVersionStatus,
   type VersionStatus,
 } from '@stellode/models';
 
-export const versionStatusLabel = (status: VersionStatus): string => {
-  const labels: Record<VersionStatus, string> = {
-    [VersionStatusConst.Draft]: 'Черновик',
-    [VersionStatusConst.Active]: 'Активна',
-    [VersionStatusConst.Deprecated]: 'Устарела',
-    [VersionStatusConst.Unactive]: 'Неактивна',
-  };
-  return labels[status];
+const versionStatusLabels: Record<VersionStatus, string> = {
+  [VersionStatusConst.Draft]: 'Черновик',
+  [VersionStatusConst.Active]: 'Активна',
+  [VersionStatusConst.Deprecated]: 'Устарела',
+  [VersionStatusConst.Unactive]: 'Неактивна',
 };
+
+export const versionStatusLabel = (status: VersionStatus): string =>
+  versionStatusLabels[status];
 
 export const releaseStatusLabel = (status: ApplicationVersionStatus): string => {
   const labels: Record<ApplicationVersionStatus, string> = {
@@ -24,10 +25,8 @@ export const releaseStatusLabel = (status: ApplicationVersionStatus): string => 
 };
 
 export const versionStatusLabelFromRaw = (raw: string | undefined): string => {
-  if (raw === VersionStatusConst.Draft) return 'Черновик';
-  if (raw === VersionStatusConst.Active) return 'Активна';
-  if (raw === VersionStatusConst.Deprecated) return 'Устарела';
-  if (raw === VersionStatusConst.Unactive) return 'Неактивна';
   if (raw === undefined || raw.trim().length === 0) return '—';
+  const parsed = parseVersionStatus(raw);
+  if (parsed !== null) return versionStatusLabel(parsed);
   return raw.trim();
 };

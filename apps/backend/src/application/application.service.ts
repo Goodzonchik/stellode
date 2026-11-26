@@ -1,26 +1,21 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import {
   ApplicationEntityType,
   ApplicationVersionStatus,
   type ApplicationListItem,
   type ApplicationVersionStatus as ApplicationVersionStatusType,
+  type CreateApplicationDto,
+  type UpdateApplicationDto,
 } from '@stellode/models';
 import { mergeCypherSetParts, optionalDescriptionSet } from '../common/set-parts';
-import { assertUnitScopedNameUnique, normalizeEntityName } from '../common/entity-name';
+import {
+  assertNameUnchangedThenUnique,
+  assertUnitScopedNameUnique,
+  normalizeEntityName,
+} from '../common/entity-name';
 import { getGraphNodeProperties } from '../common/graph-node-properties';
 import { Neo4jService, type GraphNode, type GraphQueryRecord } from '../neo4j/neo4j.service';
-
-interface CreateApplicationData {
-  name: string;
-  unitId: string;
-  description?: string;
-}
-
-interface UpdateApplicationData {
-  name?: string;
-  description?: string;
-}
 
 const toApplicationDto = (node: GraphNode) => {
   const properties = getGraphNodeProperties(node);
@@ -58,39 +53,11 @@ const toApplicationListItem = (record: GraphQueryRecord): ApplicationListItem | 
   };
 };
 
-type ValidateApplicationNameOnUpdateArgs = {
-  readonly neo4jService: Neo4jService;
-  readonly applicationId: string;
-  readonly unitId: string;
-  readonly name: string;
-  readonly storedName: string;
-};
-
-const validateApplicationNameOnUpdate = async ({
-  neo4jService,
-  applicationId,
-  unitId,
-  name,
-  storedName,
-}: ValidateApplicationNameOnUpdateArgs): Promise<void> => {
-  const normalized = normalizeEntityName(name);
-  if (normalized !== normalizeEntityName(storedName)) {
-    throw new BadRequestException('Application name is immutable');
-  }
-  await assertUnitScopedNameUnique({
-    neo4jService,
-    label: 'Application',
-    unitId,
-    name: normalized,
-    excludeId: applicationId,
-  });
-};
-
 @Injectable()
 export class ApplicationService {
   constructor(private readonly neo4jService: Neo4jService) {}
 
-  async create(data: CreateApplicationData) {
+  async create(data: CreateApplicationDto) {
     const name = normalizeEntityName(data.name);
     await assertUnitScopedNameUnique({
       neo4jService: this.neo4jService,
@@ -156,7 +123,7 @@ export class ApplicationService {
       .filter((row): row is ApplicationListItem => row !== null);
   }
 
-  async update(id: string, data: UpdateApplicationData) {
+  async update(id: string, data: UpdateApplicationDto) {
     const readQuery = `
       MATCH (app:Application {id: $id})
       RETURN app
@@ -170,10 +137,12 @@ export class ApplicationService {
     const previous = toApplicationDto(existing);
 
     if (data.name !== undefined) {
-      await validateApplicationNameOnUpdate({
+      await assertNameUnchangedThenUnique({
         neo4jService: this.neo4jService,
-        applicationId: id,
+        label: 'Application',
+        scope: 'unit',
         unitId: previous.unitId,
+        entityId: id,
         name: data.name,
         storedName: previous.name,
       });

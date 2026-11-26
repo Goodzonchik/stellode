@@ -2,7 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import type { ArchitectureGraph, Node } from '@stellode/models';
 import { Neo4jService, type GraphQueryResult } from '../neo4j/neo4j.service';
 import { mergeStarCrossUnitBridges } from './models/cross-unit-diagram';
-import { DIAGRAM_LAYER_ORDERS, orientGraphByLayerOrder } from './models/diagram-layout';
+import { DIAGRAM_LAYER_ORDERS, orientGraphByLayerOrder } from '@stellode/models';
 import {
   graphQueryResultToArchitectureGraph,
   mergeGraphDiagramResults,

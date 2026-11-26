@@ -1,5 +1,8 @@
-import type { ArchitectureGraph } from '@stellode/models';
-import { DIAGRAM_LAYER_ORDERS, orientGraphByLayerOrder } from './diagram-layout';
+import {
+  DIAGRAM_LAYER_ORDERS,
+  orientGraphByLayerOrder,
+  type ArchitectureGraph,
+} from '@stellode/models';
 
 describe('orientGraphByLayerOrder', () => {
   it('reverses MAINTAINS Team→Component so LR layout flows Application…→Team', () => {

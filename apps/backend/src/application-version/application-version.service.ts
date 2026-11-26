@@ -38,11 +38,6 @@ import { componentVersionStatusChangedEvent } from '../common/component-version-
 import { recomputeComponentVersionStatuses } from '../common/recompute-component-version-status';
 import { Neo4jService, type GraphNode } from '../neo4j/neo4j.service';
 
-const serializeNode = (node: GraphNode) => {
-  const p = node.properties;
-  return { id: (p.id as string) ?? node.id, ...p };
-};
-
 const mapAppVersionRow = (node: GraphNode) => {
   const p = node.properties as Record<string, unknown>;
   return { id: (p.id as string) ?? node.id, ...p };
@@ -229,7 +224,7 @@ export class ApplicationVersionService {
     const result = await this.neo4jService.read(query, { applicationVersionId });
     return result.records.map((r) => {
       const cv = serializeCv(requireGraphNode(r.get('cv')));
-      const c = serializeNode(requireGraphNode(r.get('c')));
+      const c = mapAppVersionRow(requireGraphNode(r.get('c')));
       const team = r.get('team') as { id: string; name: string } | null;
       const newerRaw = r.get('newerVersions') as unknown[];
       const newerVersions = newerRaw

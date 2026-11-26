@@ -5,8 +5,8 @@ import { servicesApi } from '../../api/services-api';
 import type { ColumnsType } from 'antd/es/table';
 import { resolveUnitScopedHighlightMismatch } from '../../common/list-highlight/resolve-unit-scoped-highlight-mismatch';
 import { useListRowHighlight } from '../../common/list-highlight/use-list-row-highlight';
-import { getErrorMessage } from '../../utils/axios-error';
 import { ToastVariant, useToast } from '../../hooks/useToast';
+import { useCrudPageFeedback } from '../../hooks/useCrudPageFeedback';
 import { useUnit } from '../../context/UnitContext';
 import { useNavigate } from 'react-router-dom';
 import { serviceSpaDiagramPath } from '../diagrams/spa-diagram-paths';
@@ -25,8 +25,14 @@ type ManageFeaturesTarget = {
   name: string;
 };
 
+type UnitListsPayload = {
+  readonly services: ServiceEntity[];
+  readonly features: FeatureRow[];
+};
+
 export function Services() {
   const { showToast } = useToast();
+  const { error, setError, clearError, reportFormError, runListLoad } = useCrudPageFeedback();
   const { unit } = useUnit();
   const [services, setServices] = useState<ServiceEntity[]>([]);
   const [rowsLoaded, setRowsLoaded] = useState(false);
@@ -34,7 +40,6 @@ export function Services() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingService, setEditingService] = useState<ServiceEntity | null>(null);
   const [form] = Form.useForm<{ name: string; description: string }>();
-  const [error, setError] = useState<string | null>(null);
   const [manageFeaturesTarget, setManageFeaturesTarget] = useState<ManageFeaturesTarget | null>(
     null,
   );
@@ -60,21 +65,22 @@ export function Services() {
 
   const loadUnitLists = useCallback(async () => {
     if (!unitId) return;
-    setRowsLoaded(false);
-    try {
-      const [services, features] = await Promise.all([
-        servicesApi.list(unitId),
-        featuresApi.list<FeatureRow>(unitId),
-      ]);
-      setServices(services);
-      setFeatures(features);
-    } catch (err) {
-      console.error('Error loading services/features:', err);
-      showToast(getErrorMessage(err), ToastVariant.Error);
-    } finally {
-      setRowsLoaded(true);
-    }
-  }, [unitId, showToast]);
+    await runListLoad({
+      load: async (): Promise<UnitListsPayload> => {
+        const [servicesRows, featuresRows] = await Promise.all([
+          servicesApi.list(unitId),
+          featuresApi.list<FeatureRow>(unitId),
+        ]);
+        return { services: servicesRows, features: featuresRows };
+      },
+      onSuccess: (payload) => {
+        setServices(payload.services);
+        setFeatures(payload.features);
+      },
+      setRowsLoaded,
+      logLabel: 'services/features',
+    });
+  }, [unitId, runListLoad]);
 
   useEffect(() => {
     if (!unitId) return;
@@ -112,7 +118,7 @@ export function Services() {
       setEditingService(null);
     }
     setIsDialogOpen(true);
-    setError(null);
+    clearError();
   };
 
   useEffect(() => {
@@ -127,11 +133,11 @@ export function Services() {
     form.resetFields();
     setIsDialogOpen(false);
     setEditingService(null);
-    setError(null);
+    clearError();
   };
 
   const handleSubmit = async (values: { name: string; description: string }) => {
-    setError(null);
+    clearError();
 
     const effectiveUnitId = unitId || '';
     if (!effectiveUnitId) {
@@ -157,42 +163,33 @@ export function Services() {
       showToast('Услуга сохранена', ToastVariant.Success);
       void loadUnitLists();
     } catch (err: unknown) {
-      const text = getErrorMessage(err, 'Не удалось сохранить услуга');
-
-      setError(text);
-      showToast(text, ToastVariant.Error);
+      reportFormError(err, 'Не удалось сохранить услуга');
     }
   };
 
   const handleConfirmArchive = async () => {
     if (!archiveTarget) return;
-    setError(null);
+    clearError();
     try {
       await servicesApi.archive(archiveTarget.id);
       showToast('Услуга заархивирована', ToastVariant.Success);
       setArchiveTarget(null);
       void loadUnitLists();
     } catch (err: unknown) {
-      const errorMessage = getErrorMessage(err, 'Не удалось заархивировать услуга');
-
-      showToast(errorMessage, ToastVariant.Error);
-      setError(errorMessage);
+      reportFormError(err, 'Не удалось заархивировать услуга');
     }
   };
 
   const handleConfirmUnarchive = async () => {
     if (!unarchiveTarget) return;
-    setError(null);
+    clearError();
     try {
       await servicesApi.unarchive(unarchiveTarget.id);
       showToast('Услуга возвращена из архива', ToastVariant.Success);
       setUnarchiveTarget(null);
       void loadUnitLists();
     } catch (err: unknown) {
-      const errorMessage = getErrorMessage(err, 'Не удалось вернуть услуга из архива');
-
-      showToast(errorMessage, ToastVariant.Error);
-      setError(errorMessage);
+      reportFormError(err, 'Не удалось вернуть услуга из архива');
     }
   };
 
@@ -248,7 +245,7 @@ export function Services() {
                 htmlType="button"
                 danger
                 onClick={() => {
-                  setError(null);
+                  clearError();
                   setArchiveTarget({ id: service.id, name: service.name || service.id });
                 }}
               >
@@ -260,7 +257,7 @@ export function Services() {
                 <Button
                   htmlType="button"
                   onClick={() => {
-                    setError(null);
+                    clearError();
                     setUnarchiveTarget({ id: service.id, name: service.name || service.id });
                   }}
                 >
@@ -304,7 +301,7 @@ export function Services() {
             title={error}
             showIcon
             className="entity-modal-form__alert"
-            closable={{ onClose: () => setError(null) }}
+            closable={{ onClose: clearError }}
           />
         )}
         <Form form={form} layout="vertical" onFinish={(v) => void handleSubmit(v)}>
@@ -353,7 +350,7 @@ export function Services() {
         open={archiveTarget !== null}
         onCancel={() => {
           setArchiveTarget(null);
-          setError(null);
+          clearError();
         }}
         title="Архивировать услуга"
         footer={[
@@ -361,7 +358,7 @@ export function Services() {
             key="cancel"
             onClick={() => {
               setArchiveTarget(null);
-              setError(null);
+              clearError();
             }}
           >
             Отмена
@@ -377,7 +374,7 @@ export function Services() {
             title={error}
             showIcon
             className="entity-modal-form__alert"
-            closable={{ onClose: () => setError(null) }}
+            closable={{ onClose: clearError }}
           />
         ) : null}
         <p>
@@ -390,7 +387,7 @@ export function Services() {
         open={unarchiveTarget !== null}
         onCancel={() => {
           setUnarchiveTarget(null);
-          setError(null);
+          clearError();
         }}
         title="Вернуть услуга из архива"
         footer={[
@@ -398,7 +395,7 @@ export function Services() {
             key="cancel"
             onClick={() => {
               setUnarchiveTarget(null);
-              setError(null);
+              clearError();
             }}
           >
             Отмена
@@ -414,7 +411,7 @@ export function Services() {
             title={error}
             showIcon
             className="entity-modal-form__alert"
-            closable={{ onClose: () => setError(null) }}
+            closable={{ onClose: clearError }}
           />
         ) : null}
         <p>

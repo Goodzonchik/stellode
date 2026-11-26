@@ -1,32 +1,20 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import {
   ComponentEntityType,
   type ComponentWithTeam,
+  type CreateComponentDto,
+  type UpdateComponentDto,
 } from '@stellode/models';
 import { mergeCypherSetParts, optionalDescriptionSet } from '../common/set-parts';
-import { assertUnitScopedNameUnique, normalizeEntityName } from '../common/entity-name';
+import {
+  assertNameUnchangedThenUnique,
+  assertUnitScopedNameUnique,
+  normalizeEntityName,
+} from '../common/entity-name';
 import { isGraphNode } from '../common/graph-helpers';
 import { getGraphNodeProperties } from '../common/graph-node-properties';
 import { Neo4jService, type GraphNode } from '../neo4j/neo4j.service';
-
-export type { ComponentWithTeam };
-
-interface CreateComponentData {
-  name: string;
-  unitId: string;
-  teamId: string;
-  description?: string;
-  isDependency?: boolean;
-  isPublic?: boolean;
-}
-
-interface UpdateComponentData {
-  name?: string;
-  description?: string;
-  teamId?: string;
-  unitId?: string;
-}
 
 const mapNodeToComponent = (
   node: GraphNode,
@@ -54,39 +42,11 @@ const teamFromColumns = (
     ? { id: teamId, name: typeof teamName === 'string' ? teamName : String(teamName ?? '') }
     : null;
 
-type ValidateComponentNameOnUpdateArgs = {
-  readonly neo4jService: Neo4jService;
-  readonly componentId: string;
-  readonly unitId: string;
-  readonly name: string;
-  readonly storedName: string;
-};
-
-const validateComponentNameOnUpdate = async ({
-  neo4jService,
-  componentId,
-  unitId,
-  name,
-  storedName,
-}: ValidateComponentNameOnUpdateArgs): Promise<void> => {
-  const normalized = normalizeEntityName(name);
-  if (normalized !== normalizeEntityName(storedName)) {
-    throw new BadRequestException('Component name is immutable');
-  }
-  await assertUnitScopedNameUnique({
-    neo4jService,
-    label: 'Component',
-    unitId,
-    name: normalized,
-    excludeId: componentId,
-  });
-};
-
 @Injectable()
 export class ComponentService {
   constructor(private readonly neo4jService: Neo4jService) {}
 
-  async create(data: CreateComponentData) {
+  async create(data: CreateComponentDto) {
     const name = normalizeEntityName(data.name);
     await assertUnitScopedNameUnique({
       neo4jService: this.neo4jService,
@@ -177,17 +137,18 @@ export class ComponentService {
     return mapNodeToComponent(component, team);
   }
 
-  async update(id: string, data: UpdateComponentData): Promise<ComponentWithTeam | null> {
+  async update(id: string, data: UpdateComponentDto): Promise<ComponentWithTeam | null> {
     if (data.name !== undefined) {
       const existing = await this.findOne(id);
       if (!existing) {
         return null;
       }
-      const unitId = data.unitId ?? existing.unitId;
-      await validateComponentNameOnUpdate({
+      await assertNameUnchangedThenUnique({
         neo4jService: this.neo4jService,
-        componentId: id,
-        unitId,
+        label: 'Component',
+        scope: 'unit',
+        unitId: data.unitId,
+        entityId: id,
         name: data.name,
         storedName: existing.name,
       });

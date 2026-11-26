@@ -115,13 +115,13 @@ describe('ComponentService', () => {
       const write = jest.fn().mockResolvedValue({ records: [] });
       const { service } = await setup(read, write);
 
-      await expect(service.update('c1', { name: 'Other' })).rejects.toThrow(
-        'Component name is immutable',
-      );
+      await expect(
+        service.update('c1', { unitId: 't1', teamId: 'tm1', name: 'Other' }),
+      ).rejects.toThrow('Component name is immutable');
       expect(write).not.toHaveBeenCalled();
     });
 
-    it('accepts unchanged name and does not write when nothing else changed', async () => {
+    it('accepts unchanged name and does not SET properties', async () => {
       const read = jest
         .fn()
         .mockResolvedValueOnce({ records: [mkComponentRecord(storedComponent('Old'))] })
@@ -130,10 +130,15 @@ describe('ComponentService', () => {
       const write = jest.fn().mockResolvedValue({ records: [] });
       const { service } = await setup(read, write);
 
-      const result = await service.update('c1', { name: '  Comp  ' });
+      const result = await service.update('c1', {
+        unitId: 't1',
+        teamId: 'tm1',
+        name: '  Comp  ',
+      });
 
       expect(result?.name).toBe('Comp');
-      expect(write).not.toHaveBeenCalled();
+      const combined = write.mock.calls.map((call) => String(call[0])).join('\n');
+      expect(combined).not.toContain('SET');
     });
 
     it('does not write isDependency or type', async () => {
@@ -143,7 +148,7 @@ describe('ComponentService', () => {
       const write = jest.fn().mockResolvedValue({ records: [] });
 
       const { service } = await setup(read, write);
-      await service.update('c1', { description: 'New' });
+      await service.update('c1', { unitId: 't1', teamId: 'tm1', description: 'New' });
 
       const queries = write.mock.calls.map((call) => String(call[0]));
       const combined = queries.join('\n');

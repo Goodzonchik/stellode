@@ -1,7 +1,11 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { mergeCypherSetParts, optionalDescriptionSet } from '../common/set-parts';
-import { assertGlobalNameUnique, normalizeEntityName } from '../common/entity-name';
+import {
+  assertGlobalNameUnique,
+  assertNameUnchangedThenUnique,
+  normalizeEntityName,
+} from '../common/entity-name';
 import { getGraphNodeProperties } from '../common/graph-node-properties';
 import { Neo4jService, type GraphNode } from '../neo4j/neo4j.service';
 import type { CreateUnitDto, UpdateUnitDto } from '@stellode/models';
@@ -17,33 +21,6 @@ const toUnitDto = (node: GraphNode) => {
         : String(properties.description),
     type: String(properties.type ?? ''),
   };
-};
-
-type ValidateUnitNameOnUpdateArgs = {
-  readonly neo4jService: Neo4jService;
-  readonly unitId: string;
-  readonly name: string;
-  readonly storedName: string;
-};
-
-const validateUnitNameOnUpdate = async ({
-  neo4jService,
-  unitId,
-  name,
-  storedName,
-}: ValidateUnitNameOnUpdateArgs): Promise<void> => {
-  const normalized = normalizeEntityName(name);
-
-  if (normalized !== normalizeEntityName(storedName)) {
-    throw new BadRequestException('Unit name is immutable');
-  }
-
-  await assertGlobalNameUnique({
-    neo4jService,
-    label: 'Unit',
-    name: normalized,
-    excludeId: unitId,
-  });
 };
 
 @Injectable()
@@ -100,9 +77,11 @@ export class UnitService {
     const previous = toUnitDto(existing);
 
     if (data.name !== undefined) {
-      await validateUnitNameOnUpdate({
+      await assertNameUnchangedThenUnique({
         neo4jService: this.neo4jService,
-        unitId: id,
+        label: 'Unit',
+        scope: 'global',
+        entityId: id,
         name: data.name,
         storedName: previous.name,
       });

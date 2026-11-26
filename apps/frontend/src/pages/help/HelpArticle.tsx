@@ -5,7 +5,7 @@ import type { HelpFullViewContent } from './help-full-view-content';
 import type { HelpMarkdownSegment } from './help-manifest.types';
 import { HelpFullViewOverlay } from './HelpFullViewOverlay';
 import { parseHelpMarkdownHtml } from './parse-help-markdown-html';
-import { runHelpMermaid } from './run-help-mermaid';
+import { runMermaidInContainer } from '../../common/run-mermaid-in-container';
 
 type HelpArticleProps = {
   readonly segments: readonly HelpMarkdownSegment[];
@@ -51,7 +51,7 @@ export const HelpArticle = ({
     let cancelled = false;
     let detachFullView = attachHelpFullView(root, onOpenFullView);
     attachHelpHeadingCopyLinks(root, slug, onCopyResult);
-    void runHelpMermaid(root)
+    void runMermaidInContainer(root)
       .catch(() => undefined)
       .finally(() => {
         if (cancelled) {

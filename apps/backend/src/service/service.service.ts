@@ -14,17 +14,7 @@ import {
 import { isGraphNode } from '../common/graph-helpers';
 import { getGraphNodeProperties } from '../common/graph-node-properties';
 import { Neo4jService, type GraphNode } from '../neo4j/neo4j.service';
-
-interface CreateServiceData {
-  name: string;
-  unitId: string;
-  description?: string;
-}
-
-interface UpdateServiceData {
-  name?: string;
-  description?: string;
-}
+import type { CreateServiceDto, UpdateServiceDto } from '@stellode/models';
 
 const toServiceDto = (node: GraphNode) => {
   const properties = getGraphNodeProperties(node);
@@ -53,7 +43,7 @@ const nodeToDtoOrNull = (value: unknown) => (isGraphNode(value) ? toServiceDto(v
 export class ServiceService {
   constructor(private readonly neo4jService: Neo4jService) {}
 
-  async create(data: CreateServiceData) {
+  async create(data: CreateServiceDto) {
     const name = normalizeEntityName(data.name);
     await assertUnitScopedNameUnique({
       neo4jService: this.neo4jService,
@@ -105,7 +95,7 @@ export class ServiceService {
     return nodeToDtoOrNull(result.records[0]?.get('service'));
   }
 
-  async update(id: string, data: UpdateServiceData) {
+  async update(id: string, data: UpdateServiceDto) {
     await this.#assertServiceActive(id);
     assertNameImmutable(data.name, 'Service');
     const parts = [

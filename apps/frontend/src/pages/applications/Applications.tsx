@@ -4,8 +4,8 @@ import { applicationsApi } from '../../api/applications-api';
 import type { ColumnsType } from 'antd/es/table';
 import { resolveUnitScopedHighlightMismatch } from '../../common/list-highlight/resolve-unit-scoped-highlight-mismatch';
 import { useListRowHighlight } from '../../common/list-highlight/use-list-row-highlight';
-import { getErrorMessage } from '../../utils/axios-error';
 import { ToastVariant, useToast } from '../../hooks/useToast';
+import { useCrudPageFeedback } from '../../hooks/useCrudPageFeedback';
 import { useUnit } from '../../context/UnitContext';
 import { useNavigate } from 'react-router-dom';
 import type {
@@ -21,6 +21,7 @@ import { applicationVersionDiagramPath } from '../diagrams/spa-diagram-paths';
 
 export function Applications() {
   const { showToast } = useToast();
+  const { error, clearError, reportFormError, toastError, runListLoad } = useCrudPageFeedback();
   const { openForApplication } = useStatusWarning();
   const { unit } = useUnit();
   const [application, setApplication] = useState<ApplicationListItem[]>([]);
@@ -28,7 +29,6 @@ export function Applications() {
   const [createOpen, setCreateOpen] = useState(false);
   const [editingApp, setEditingApp] = useState<ApplicationEntity | null>(null);
   const [form] = Form.useForm<{ name: string; description: string }>();
-  const [error, setError] = useState<string | null>(null);
 
   const unitId = unit?.id;
   const navigate = useNavigate();
@@ -40,16 +40,15 @@ export function Applications() {
 
   const loadApplication = async () => {
     if (!unitId) return;
-    setRowsLoaded(false);
-    try {
-      const rows = await applicationsApi.list(unitId);
-      setApplication(Array.isArray(rows) ? rows : []);
-    } catch (err) {
-      console.error('Error loading application:', err);
-      showToast(getErrorMessage(err), ToastVariant.Error);
-    } finally {
-      setRowsLoaded(true);
-    }
+    await runListLoad({
+      load: async () => {
+        const rows = await applicationsApi.list(unitId);
+        return Array.isArray(rows) ? rows : [];
+      },
+      onSuccess: setApplication,
+      setRowsLoaded,
+      logLabel: 'application',
+    });
   };
 
   const rowIds = useMemo(
@@ -87,12 +86,12 @@ export function Applications() {
   const handleCloseEdit = () => {
     form.resetFields();
     setEditingApp(null);
-    setError(null);
+    clearError();
   };
 
   const handleSubmitEdit = async (values: { name: string; description: string }) => {
     if (editingApp === null) return;
-    setError(null);
+    clearError();
     try {
       const payload: UpdateApplicationDto = {
         name: values.name,
@@ -103,9 +102,7 @@ export function Applications() {
       showToast('Приложение сохранено', ToastVariant.Success);
       void loadApplication();
     } catch (err: unknown) {
-      const messageText = getErrorMessage(err, 'Не удалось сохранить приложение');
-      setError(messageText);
-      showToast(messageText, ToastVariant.Error);
+      reportFormError(err, 'Не удалось сохранить приложение');
     }
   };
 
@@ -119,8 +116,7 @@ export function Applications() {
       showToast('Приложение удалено', ToastVariant.Success);
       void loadApplication();
     } catch (err: unknown) {
-      const messageText = getErrorMessage(err, 'Не удалось удалить приложение');
-      showToast(messageText, ToastVariant.Error);
+      toastError(err, 'Не удалось удалить приложение');
     }
   };
 
@@ -221,7 +217,7 @@ export function Applications() {
             title={error}
             showIcon
             className="entity-modal-form__alert"
-            closable={{ onClose: () => setError(null) }}
+            closable={{ onClose: clearError }}
           />
         ) : null}
         <Form form={form} layout="vertical" onFinish={(v) => void handleSubmitEdit(v)}>

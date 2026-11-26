@@ -6,16 +6,15 @@ import { Alert, Button, Form, Input, Modal, Select, Space, Table, Typography } f
 import type { ColumnsType } from 'antd/es/table';
 import { resolveUnitScopedHighlightMismatch } from '../../common/list-highlight/resolve-unit-scoped-highlight-mismatch';
 import { useListRowHighlight } from '../../common/list-highlight/use-list-row-highlight';
-import { getErrorMessage } from '../../utils/axios-error';
 import { ToastVariant, useToast } from '../../hooks/useToast';
+import { useCrudPageFeedback } from '../../hooks/useCrudPageFeedback';
 import { useUnit } from '../../context/UnitContext';
 import { ComponentCreateDialog } from './ComponentCreateDialog';
 import type { ComponentListTypeFilter } from './component-list-type-filter';
-import type { DictionaryNode } from './dictionary-node';
 import type { ComponentNode } from './component-node';
 import { filterComponents } from './filter-components';
 import { getComponentKindLabel } from './get-component-kind-label';
-import type { UpdateComponentDto } from '@stellode/models';
+import type { TeamEntity, UpdateComponentDto } from '@stellode/models';
 import { componentDiagramPath } from '../diagrams/spa-diagram-paths';
 
 type ComponentEditFormValues = {
@@ -33,11 +32,13 @@ const typeFilterOptions = [
 
 export function Components() {
   const { showToast } = useToast();
+  const { error, setError, clearError, reportFormError, toastError, runListLoad } =
+    useCrudPageFeedback();
   const navigate = useNavigate();
   const { unit } = useUnit();
   const [components, setComponents] = useState<ComponentNode[]>([]);
   const [rowsLoaded, setRowsLoaded] = useState(false);
-  const [teams, setTeams] = useState<DictionaryNode[]>([]);
+  const [teams, setTeams] = useState<Pick<TeamEntity, 'id' | 'name'>[]>([]);
   const [nameFilter, setNameFilter] = useState('');
   const [teamFilter, setTeamFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState<ComponentListTypeFilter>('');
@@ -45,7 +46,6 @@ export function Components() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingComponent, setEditingComponent] = useState<ComponentNode | null>(null);
   const [form] = Form.useForm<ComponentEditFormValues>();
-  const [error, setError] = useState<string | null>(null);
 
   const unitId = unit?.id;
 
@@ -57,15 +57,12 @@ export function Components() {
 
   const loadComponents = async () => {
     if (!unitId) return;
-    setRowsLoaded(false);
-    try {
-      setComponents((await componentsApi.list(unitId)) as ComponentNode[]);
-    } catch (err) {
-      console.error('Error loading components:', err);
-      showToast(getErrorMessage(err), ToastVariant.Error);
-    } finally {
-      setRowsLoaded(true);
-    }
+    await runListLoad({
+      load: async () => (await componentsApi.list(unitId)) as ComponentNode[],
+      onSuccess: setComponents,
+      setRowsLoaded,
+      logLabel: 'components',
+    });
   };
 
   const rowIds = useMemo(
@@ -103,14 +100,14 @@ export function Components() {
       setTeams(await teamsApi.list(unitId));
     } catch (err) {
       console.error('Error loading teams:', err);
-      showToast(getErrorMessage(err), ToastVariant.Error);
+      toastError(err);
     }
   };
 
   const openEditDialog = (component: ComponentNode) => {
     setEditingComponent(component);
     setEditDialogOpen(true);
-    setError(null);
+    clearError();
   };
 
   useEffect(() => {
@@ -126,11 +123,11 @@ export function Components() {
     form.resetFields();
     setEditDialogOpen(false);
     setEditingComponent(null);
-    setError(null);
+    clearError();
   };
 
   const handleSubmitEdit = async (values: ComponentEditFormValues) => {
-    setError(null);
+    clearError();
 
     try {
       if (!unitId) {
@@ -149,10 +146,7 @@ export function Components() {
       showToast('Компонент сохранён', ToastVariant.Success);
       loadComponents();
     } catch (err: unknown) {
-      const text = getErrorMessage(err, 'Не удалось сохранить компонент');
-
-      setError(text);
-      showToast(text, ToastVariant.Error);
+      reportFormError(err, 'Не удалось сохранить компонент');
     }
   };
 
@@ -166,8 +160,7 @@ export function Components() {
       showToast('Компонент удалён', ToastVariant.Success);
       loadComponents();
     } catch (err: unknown) {
-      const text = getErrorMessage(err, 'Не удалось удалить компонент');
-      showToast(text, ToastVariant.Error);
+      toastError(err, 'Не удалось удалить компонент');
     }
   };
 
@@ -296,7 +289,7 @@ export function Components() {
             title={error}
             showIcon
             className="entity-modal-form__alert"
-            closable={{ onClose: () => setError(null) }}
+            closable={{ onClose: clearError }}
           />
         )}
         <Form form={form} layout="vertical" onFinish={(values) => void handleSubmitEdit(values)}>

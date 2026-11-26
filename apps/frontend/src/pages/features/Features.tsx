@@ -9,9 +9,13 @@ import { useListRowHighlight } from '../../common/list-highlight/use-list-row-hi
 import { ToastVariant, useToast } from '../../hooks/useToast';
 import { useCrudPageFeedback } from '../../hooks/useCrudPageFeedback';
 import { useUnit } from '../../context/UnitContext';
-import type { DictionaryNode } from '../components/dictionary-node';
 import { useNavigate } from 'react-router-dom';
-import type { CreateFeatureDto, FeatureWithServices, UpdateFeatureDto } from '@stellode/models';
+import type {
+  CreateFeatureDto,
+  FeatureWithServices,
+  ServiceEntity,
+  UpdateFeatureDto,
+} from '@stellode/models';
 import type { FeatureVersionLegendRow } from '../diagrams/feature-version-legend-row';
 import { resolveDefaultFeatureVersionId } from '../diagrams/resolve-default-feature-version-id';
 import { featureVersionDiagramPath } from '../diagrams/spa-diagram-paths';
@@ -37,7 +41,7 @@ export function Features() {
   const { unit } = useUnit();
   const [features, setFeatures] = useState<Feature[]>([]);
   const [rowsLoaded, setRowsLoaded] = useState(false);
-  const [services, setServices] = useState<DictionaryNode[]>([]);
+  const [services, setServices] = useState<Pick<ServiceEntity, 'id' | 'name'>[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingFeature, setEditingFeature] = useState<Feature | null>(null);
   const [form] = Form.useForm<FeatureFormValues>();

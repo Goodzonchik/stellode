@@ -1,20 +1,14 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { randomUUID } from 'crypto';
+import type { CreateTeamDto, UpdateTeamDto } from '@stellode/models';
 import { mergeCypherSetParts, optionalDescriptionSet } from '../common/set-parts';
-import { assertUnitScopedNameUnique, normalizeEntityName } from '../common/entity-name';
+import {
+  assertNameUnchangedThenUnique,
+  assertUnitScopedNameUnique,
+  normalizeEntityName,
+} from '../common/entity-name';
 import { getGraphNodeProperties } from '../common/graph-node-properties';
 import { Neo4jService, type GraphNode } from '../neo4j/neo4j.service';
-
-interface CreateTeamData {
-  name: string;
-  unitId: string;
-  description?: string;
-}
-
-interface UpdateTeamData {
-  name?: string;
-  description?: string;
-}
 
 const toTeamDto = (node: GraphNode) => {
   const properties = getGraphNodeProperties(node);
@@ -30,39 +24,11 @@ const toTeamDto = (node: GraphNode) => {
   };
 };
 
-type ValidateTeamNameOnUpdateArgs = {
-  readonly neo4jService: Neo4jService;
-  readonly teamId: string;
-  readonly unitId: string;
-  readonly name: string;
-  readonly storedName: string;
-};
-
-const validateTeamNameOnUpdate = async ({
-  neo4jService,
-  teamId,
-  unitId,
-  name,
-  storedName,
-}: ValidateTeamNameOnUpdateArgs): Promise<void> => {
-  const normalized = normalizeEntityName(name);
-  if (normalized !== normalizeEntityName(storedName)) {
-    throw new BadRequestException('Team name is immutable');
-  }
-  await assertUnitScopedNameUnique({
-    neo4jService,
-    label: 'Team',
-    unitId,
-    name: normalized,
-    excludeId: teamId,
-  });
-};
-
 @Injectable()
 export class TeamService {
   constructor(private readonly neo4jService: Neo4jService) {}
 
-  async create(data: CreateTeamData) {
+  async create(data: CreateTeamDto) {
     const name = normalizeEntityName(data.name);
     await assertUnitScopedNameUnique({
       neo4jService: this.neo4jService,
@@ -102,7 +68,7 @@ export class TeamService {
       .map(toTeamDto);
   }
 
-  async update(id: string, data: UpdateTeamData) {
+  async update(id: string, data: UpdateTeamDto) {
     const readQuery = `
       MATCH (team:Team {id: $id})
       RETURN team
@@ -116,10 +82,12 @@ export class TeamService {
     const previous = toTeamDto(existing);
 
     if (data.name !== undefined) {
-      await validateTeamNameOnUpdate({
+      await assertNameUnchangedThenUnique({
         neo4jService: this.neo4jService,
-        teamId: id,
+        label: 'Team',
+        scope: 'unit',
         unitId: previous.unitId,
+        entityId: id,
         name: data.name,
         storedName: previous.name,
       });
