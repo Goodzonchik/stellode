@@ -1,22 +1,24 @@
-import { VersionStatus, type ApplicationComponentStatus } from '@stellode/models';
+import { VersionStatus, type VersionStatus as VersionStatusType } from './version-status';
+import type { ApplicationComponentStatus } from './derive-component-version-status';
 
 export type CompositionApplicationStatusRow = {
   componentId: string;
   componentVersionId: string;
-  lifecycleStatus: VersionStatus;
+  lifecycleStatus: VersionStatusType;
   applicationStatus: ApplicationComponentStatus;
 };
 
 export const defaultApplicationStatusForLifecycle = (
-  lifecycleStatus: VersionStatus,
+  lifecycleStatus: VersionStatusType,
 ): ApplicationComponentStatus => {
   if (lifecycleStatus === VersionStatus.Draft) return VersionStatus.Active;
   if (lifecycleStatus === VersionStatus.Deprecated) return VersionStatus.Deprecated;
   return VersionStatus.Active;
 };
 
-export const isApplicationStatusLockedToActive = (lifecycleStatus: VersionStatus): boolean =>
-  lifecycleStatus === VersionStatus.Draft;
+export const isApplicationStatusLockedToActive = (
+  lifecycleStatus: VersionStatusType,
+): boolean => lifecycleStatus === VersionStatus.Draft;
 
 export const demoteSameComponentRows = (
   rows: readonly CompositionApplicationStatusRow[],
@@ -102,4 +104,28 @@ export const componentIdsWithoutActiveRow = (
   return [...byComponent.entries()]
     .filter(([, list]) => !list.some((row) => row.applicationStatus === VersionStatus.Active))
     .map(([componentId]) => componentId);
+};
+
+export type ActiveCompositionSelectionRow = {
+  componentId: string;
+  componentVersionId: string;
+  applicationStatus: ApplicationComponentStatus;
+};
+
+export const findDuplicateActiveComponentIds = (
+  rows: readonly ActiveCompositionSelectionRow[],
+): string[] => {
+  const activeByComponent = new Map<string, string>();
+  const duplicates = new Set<string>();
+  for (const row of rows) {
+    if (row.applicationStatus !== VersionStatus.Active) continue;
+    if (!row.componentId) continue;
+    const previous = activeByComponent.get(row.componentId);
+    if (previous && previous !== row.componentVersionId) {
+      duplicates.add(row.componentId);
+      continue;
+    }
+    activeByComponent.set(row.componentId, row.componentVersionId);
+  }
+  return [...duplicates];
 };

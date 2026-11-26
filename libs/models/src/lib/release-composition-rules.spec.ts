@@ -1,14 +1,16 @@
-import { VersionStatus } from '@stellode/models';
+import { VersionStatus } from './version-status';
 import {
   applyApplicationStatusChange,
   bumpCompositionRow,
   defaultApplicationStatusForLifecycle,
+  findDuplicateActiveComponentIds,
   mergeAddedCompositionRow,
   type CompositionApplicationStatusRow,
-} from './releaseCompositionRules';
+} from './release-composition-rules';
 
 const row = (
-  partial: Partial<CompositionApplicationStatusRow> & Pick<CompositionApplicationStatusRow, 'componentId' | 'componentVersionId'>,
+  partial: Partial<CompositionApplicationStatusRow> &
+    Pick<CompositionApplicationStatusRow, 'componentId' | 'componentVersionId'>,
 ): CompositionApplicationStatusRow => ({
   lifecycleStatus: VersionStatus.Active,
   applicationStatus: VersionStatus.Active,
@@ -33,15 +35,15 @@ describe('releaseCompositionRules', () => {
       lifecycleStatus: VersionStatus.Draft,
     });
     const next = mergeAddedCompositionRow(initial, added);
-    expect(next.find((r) => r.componentVersionId === 'v1')?.applicationStatus).toBe(
+    expect(next.find((item) => item.componentVersionId === 'v1')?.applicationStatus).toBe(
       VersionStatus.Deprecated,
     );
-    expect(next.find((r) => r.componentVersionId === 'v2')?.applicationStatus).toBe(
+    expect(next.find((item) => item.componentVersionId === 'v2')?.applicationStatus).toBe(
       VersionStatus.Active,
     );
   });
 
-  it('adds deprecated lifecycle as deprecated without demoting siblings to make room for active', () => {
+  it('adds deprecated lifecycle as deprecated without demoting siblings', () => {
     const initial = [
       row({ componentId: 'c1', componentVersionId: 'v1', applicationStatus: VersionStatus.Active }),
     ];
@@ -51,10 +53,10 @@ describe('releaseCompositionRules', () => {
       lifecycleStatus: VersionStatus.Deprecated,
     });
     const next = mergeAddedCompositionRow(initial, added);
-    expect(next.find((r) => r.componentVersionId === 'v1')?.applicationStatus).toBe(
+    expect(next.find((item) => item.componentVersionId === 'v1')?.applicationStatus).toBe(
       VersionStatus.Active,
     );
-    expect(next.find((r) => r.componentVersionId === 'v2')?.applicationStatus).toBe(
+    expect(next.find((item) => item.componentVersionId === 'v2')?.applicationStatus).toBe(
       VersionStatus.Deprecated,
     );
   });
@@ -69,10 +71,10 @@ describe('releaseCompositionRules', () => {
       }),
     ];
     const next = applyApplicationStatusChange(initial, 'v2', VersionStatus.Active);
-    expect(next.find((r) => r.componentVersionId === 'v1')?.applicationStatus).toBe(
+    expect(next.find((item) => item.componentVersionId === 'v1')?.applicationStatus).toBe(
       VersionStatus.Deprecated,
     );
-    expect(next.find((r) => r.componentVersionId === 'v2')?.applicationStatus).toBe(
+    expect(next.find((item) => item.componentVersionId === 'v2')?.applicationStatus).toBe(
       VersionStatus.Active,
     );
   });
@@ -127,5 +129,27 @@ describe('releaseCompositionRules', () => {
       VersionStatus.Active,
     );
     expect(next.find((item) => item.componentVersionId === 'v1b')).toBeUndefined();
+  });
+
+  it('finds components with more than one active application status', () => {
+    expect(
+      findDuplicateActiveComponentIds([
+        {
+          componentId: 'c1',
+          componentVersionId: 'v1',
+          applicationStatus: VersionStatus.Active,
+        },
+        {
+          componentId: 'c1',
+          componentVersionId: 'v2',
+          applicationStatus: VersionStatus.Active,
+        },
+        {
+          componentId: 'c2',
+          componentVersionId: 'v3',
+          applicationStatus: VersionStatus.Active,
+        },
+      ]),
+    ).toEqual(['c1']);
   });
 });

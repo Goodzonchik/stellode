@@ -5,9 +5,7 @@ import { DeprecatedWarningTriangle } from '../../components/DeprecatedWarningTri
 import { deprecatedWarningTooltip } from '../../components/status-warning-tooltip';
 import { useStatusWarning } from '../../context/StatusWarningContext';
 import { eligibleBumpVersions } from './releaseCatalogEligibility';
-import {
-  isApplicationStatusLockedToActive,
-} from './releaseCompositionRules';
+import { isApplicationStatusLockedToActive } from '@stellode/models';
 import type { ReleaseComponentRow } from './releaseWizardTypes';
 import styles from './ReleaseWizardForm.module.css';
 

@@ -58,10 +58,6 @@
   - Риск: средний–высокий
 
 
-### P2 — полезные упрощения
-
-- [ ] Вынести разделяемую часть `releaseCompositionRules.ts` в `libs/models`; сверить с BE release path
-
 ### P3 — косметика / отложить
 
 - [ ] Литералы `'draft'|'active'` → `VersionStatus` в diagram-коде
@@ -72,7 +68,7 @@
 
 ### Порядок первых PR
 
-1. P0 #1–#4 + быстрые P2 (мёртвый файл, `mayBeginHub…`)
+1. P0 #1–#4
 2. P1 status-rules + `isApplicationComponentStatus`
 3. Хуки из `Diagrams.tsx`
 4. Разрез god-services по сценариям

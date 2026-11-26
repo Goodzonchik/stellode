@@ -8,7 +8,7 @@ import {
   defaultApplicationStatusForLifecycle,
   mergeAddedCompositionRow,
   type CompositionApplicationStatusRow,
-} from './releaseCompositionRules';
+} from '@stellode/models';
 import {
   normalizeUnitComponents,
   parseReleaseComponentRow,

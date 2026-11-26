@@ -3,7 +3,9 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { randomUUID } from 'crypto';
 import {
   ApplicationVersionStatus,
+  findDuplicateActiveComponentIds,
   isApplicationComponentStatus,
+  isApplicationStatusLockedToActive,
   parseVersionStatus,
   VersionStatus,
   type ApplicationComponentStatus,
@@ -365,18 +367,17 @@ export class ApplicationVersionService {
     components: ReleaseComponentSelectionDto[],
     componentIdByCvId: Map<string, string>,
   ) {
-    const activeByComponent = new Map<string, string>();
-    for (const row of components) {
-      if (row.status !== VersionStatus.Active) continue;
-      const componentId = componentIdByCvId.get(row.componentVersionId) ?? '';
-      if (!componentId) continue;
-      const previous = activeByComponent.get(componentId);
-      if (previous && previous !== row.componentVersionId) {
-        throw new BadRequestException(
-          'Release failed: application release must include at most one active HAS_COMPONENT row per Component',
-        );
-      }
-      activeByComponent.set(componentId, row.componentVersionId);
+    const duplicates = findDuplicateActiveComponentIds(
+      components.map((row) => ({
+        componentId: componentIdByCvId.get(row.componentVersionId) ?? '',
+        componentVersionId: row.componentVersionId,
+        applicationStatus: row.status,
+      })),
+    );
+    if (duplicates.length > 0) {
+      throw new BadRequestException(
+        'Release failed: application release must include at most one active HAS_COMPONENT row per Component',
+      );
     }
   }
 
@@ -430,7 +431,7 @@ export class ApplicationVersionService {
           'Релиз не выполнен: при добавлении компонента в релиз приложения статус ComponentVersion должен быть active, deprecated или draft',
         );
       }
-      if (status === VersionStatus.Draft && row.status !== VersionStatus.Active) {
+      if (isApplicationStatusLockedToActive(status) && row.status !== VersionStatus.Active) {
         throw new BadRequestException(
           'Release failed: draft ComponentVersion rows must use application status active',
         );
@@ -502,7 +503,9 @@ export class ApplicationVersionService {
         }
       }
       if (
-        selection.selectedStatus === VersionStatus.Draft &&
+        isApplicationStatusLockedToActive(
+          parseVersionStatus(selection.selectedStatus) ?? VersionStatus.Unactive,
+        ) &&
         row.status !== VersionStatus.Active
       ) {
         throw new BadRequestException(
