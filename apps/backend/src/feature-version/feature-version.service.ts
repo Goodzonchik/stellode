@@ -129,6 +129,74 @@ const isRawBindingReadinessRow = (value: unknown): value is RawBindingReadinessR
   return 'applicationId' in value && 'componentVersionId' in value;
 };
 
+const toReadinessBindings = (raw: unknown): FeatureBindingReadiness[] => {
+  const rows: unknown[] = Array.isArray(raw) ? raw : [];
+  return rows.filter(isRawBindingReadinessRow).map((row) => toFeatureBindingReadiness(row));
+};
+
+const toCanAutoActive = (raw: unknown): boolean => raw === true || raw === 'true';
+
+const bindingUsesBatchQuery = `
+  MATCH (fv:FeatureVersion)
+  WHERE fv.id IN $ids
+  OPTIONAL MATCH (fv)-[uses:USES_COMPONENT_VERSION]->(cv:ComponentVersion)
+  OPTIONAL MATCH (c:Component {id: cv.componentId})
+  OPTIONAL MATCH (app:Application {id: uses.applicationId})
+  OPTIONAL MATCH (app)-[:HAS_VERSION]->(av:ApplicationVersion {status: 'current'})
+  OPTIONAL MATCH (av)-[hc:HAS_COMPONENT]->(cv)
+  RETURN fv.id AS id,
+    fv.status AS status,
+    coalesce(fv.canAutoActive, false) AS canAutoActive,
+    collect(CASE
+      WHEN uses IS NULL THEN null
+      ELSE {
+        applicationId: uses.applicationId,
+        applicationName: app.name,
+        componentId: cv.componentId,
+        componentName: coalesce(c.name, cv.name, ''),
+        componentVersionId: cv.id,
+        componentVersion: cv.version,
+        unitId: coalesce(app.unitId, cv.unitId, ''),
+        hasCurrentRelease: av IS NOT NULL,
+        statusInRelease: hc.status
+      }
+    END) AS bindingRows
+`;
+
+const bindingCrossUnitBatchQuery = `
+  MATCH (fv:FeatureVersion)
+  WHERE fv.id IN $ids
+  OPTIONAL MATCH (fv)-[:USES_COMPONENT_VERSION]->(cons:ComponentVersion)
+  OPTIONAL MATCH (cons)-[dep:DEPENDS_ON]->(prov:ComponentVersion)
+  WHERE cons.unitId IS NOT NULL
+    AND prov.unitId IS NOT NULL
+    AND cons.unitId <> prov.unitId
+  WITH fv, dep, prov,
+    CASE
+      WHEN dep IS NULL THEN null
+      ELSE coalesce(dep.providerApplicationId, '')
+    END AS providerApplicationId
+  OPTIONAL MATCH (provComp:Component {id: prov.componentId})
+  OPTIONAL MATCH (provApp:Application {id: providerApplicationId})
+  OPTIONAL MATCH (provApp)-[:HAS_VERSION]->(provAv:ApplicationVersion {status: 'current'})
+  OPTIONAL MATCH (provAv)-[provHc:HAS_COMPONENT]->(prov)
+  RETURN fv.id AS id,
+    collect(DISTINCT CASE
+      WHEN dep IS NULL THEN null
+      ELSE {
+        applicationId: coalesce(providerApplicationId, ''),
+        applicationName: coalesce(provApp.name, ''),
+        componentId: coalesce(prov.componentId, ''),
+        componentName: coalesce(provComp.name, prov.name, ''),
+        componentVersionId: prov.id,
+        componentVersion: prov.version,
+        unitId: coalesce(provApp.unitId, prov.unitId, ''),
+        hasCurrentRelease: provAv IS NOT NULL,
+        statusInRelease: provHc.status
+      }
+    END) AS crossUnitBindingRows
+`;
+
 const assertUsesComponentVersionTargetsAllowed = (
   targets: ReadonlyArray<{ rawStatus: unknown; componentId: string }>,
   inheritedComponentIds: ReadonlySet<string>,
@@ -221,114 +289,55 @@ export class FeatureVersionService {
     private readonly componentVersionService: ComponentVersionService,
   ) {}
 
+  private async loadBindingReadinessBatch(
+    featureVersionIds: readonly string[],
+  ): Promise<Map<string, FeatureVersionBindingLoad>> {
+    const ids = [...new Set(featureVersionIds)];
+    if (ids.length === 0) return new Map();
+
+    const usesResult = await this.neo4jService.read(bindingUsesBatchQuery, { ids });
+    const crossUnitResult = await this.neo4jService.read(bindingCrossUnitBatchQuery, { ids });
+    const crossUnitById = new Map<string, FeatureBindingReadiness[]>();
+    for (const record of crossUnitResult.records) {
+      const id = String(record.get('id') ?? '');
+      if (id.length === 0) continue;
+      crossUnitById.set(id, toReadinessBindings(record.get('crossUnitBindingRows')));
+    }
+
+    const loaded = new Map<string, FeatureVersionBindingLoad>();
+    for (const record of usesResult.records) {
+      const id = String(record.get('id') ?? '');
+      if (id.length === 0) continue;
+      const bindings = toReadinessBindings(record.get('bindingRows'));
+      const crossUnitBindings = crossUnitById.get(id) ?? [];
+      loaded.set(id, {
+        id,
+        status: String(record.get('status') ?? ''),
+        canAutoActive: toCanAutoActive(record.get('canAutoActive')),
+        bindings,
+        crossUnitBindings,
+        readyToProduction: draftReadyForProduction(bindings, crossUnitBindings),
+      });
+    }
+    return loaded;
+  }
+
   private async loadBindingReadiness(featureVersionId: string): Promise<FeatureVersionBindingLoad> {
-    const usesQuery = `
-      MATCH (fv:FeatureVersion {id: $featureVersionId})
-      OPTIONAL MATCH (fv)-[uses:USES_COMPONENT_VERSION]->(cv:ComponentVersion)
-      OPTIONAL MATCH (c:Component {id: cv.componentId})
-      OPTIONAL MATCH (app:Application {id: uses.applicationId})
-      OPTIONAL MATCH (app)-[:HAS_VERSION]->(av:ApplicationVersion {status: 'current'})
-      OPTIONAL MATCH (av)-[hc:HAS_COMPONENT]->(cv)
-      RETURN fv.id AS id,
-        fv.status AS status,
-        coalesce(fv.canAutoActive, false) AS canAutoActive,
-        collect(CASE
-          WHEN uses IS NULL THEN null
-          ELSE {
-            applicationId: uses.applicationId,
-            applicationName: app.name,
-            componentId: cv.componentId,
-            componentName: coalesce(c.name, cv.name, ''),
-            componentVersionId: cv.id,
-            componentVersion: cv.version,
-            unitId: coalesce(app.unitId, cv.unitId, ''),
-            hasCurrentRelease: av IS NOT NULL,
-            statusInRelease: hc.status
-          }
-        END) AS bindingRows
-    `;
-    const crossUnitQuery = `
-      MATCH (fv:FeatureVersion {id: $featureVersionId})
-      OPTIONAL MATCH (fv)-[:USES_COMPONENT_VERSION]->(cons:ComponentVersion)
-      OPTIONAL MATCH (cons)-[dep:DEPENDS_ON]->(prov:ComponentVersion)
-      WHERE cons.unitId IS NOT NULL
-        AND prov.unitId IS NOT NULL
-        AND cons.unitId <> prov.unitId
-      WITH dep, prov,
-        CASE
-          WHEN dep IS NULL THEN null
-          ELSE coalesce(dep.providerApplicationId, '')
-        END AS providerApplicationId
-      OPTIONAL MATCH (provComp:Component {id: prov.componentId})
-      OPTIONAL MATCH (provApp:Application {id: providerApplicationId})
-      OPTIONAL MATCH (provApp)-[:HAS_VERSION]->(provAv:ApplicationVersion {status: 'current'})
-      OPTIONAL MATCH (provAv)-[provHc:HAS_COMPONENT]->(prov)
-      RETURN collect(DISTINCT CASE
-        WHEN dep IS NULL THEN null
-        ELSE {
-          applicationId: coalesce(providerApplicationId, ''),
-          applicationName: coalesce(provApp.name, ''),
-          componentId: coalesce(prov.componentId, ''),
-          componentName: coalesce(provComp.name, prov.name, ''),
-          componentVersionId: prov.id,
-          componentVersion: prov.version,
-          unitId: coalesce(provApp.unitId, prov.unitId, ''),
-          hasCurrentRelease: provAv IS NOT NULL,
-          statusInRelease: provHc.status
-        }
-      END) AS crossUnitBindingRows
-    `;
-    const result = await this.neo4jService.read(usesQuery, { featureVersionId });
-    if (result.records.length === 0) {
+    const loaded = await this.loadBindingReadinessBatch([featureVersionId]);
+    const row = loaded.get(featureVersionId);
+    if (!row) {
       throw new BadRequestException('FeatureVersion not found');
     }
-    const rec = result.records[0];
-    const bindingRowsValue = rec.get('bindingRows');
-    const rawRows: unknown[] = Array.isArray(bindingRowsValue) ? bindingRowsValue : [];
-    const bindings = rawRows
-      .filter(isRawBindingReadinessRow)
-      .map((row) => toFeatureBindingReadiness(row));
-    const crossUnitResult = await this.neo4jService.read(crossUnitQuery, { featureVersionId });
-    const crossUnitRec = crossUnitResult.records[0];
-    const crossUnitRowsValue = crossUnitRec?.get('crossUnitBindingRows');
-    const rawCrossUnitRows: unknown[] = Array.isArray(crossUnitRowsValue)
-      ? crossUnitRowsValue
-      : [];
-    const crossUnitBindings = rawCrossUnitRows
-      .filter(isRawBindingReadinessRow)
-      .map((row) => toFeatureBindingReadiness(row));
-    const rawAuto = rec.get('canAutoActive');
-    return {
-      id: String(rec.get('id') ?? ''),
-      status: String(rec.get('status') ?? ''),
-      canAutoActive: rawAuto === true || rawAuto === 'true',
-      bindings,
-      crossUnitBindings,
-      readyToProduction: draftReadyForProduction(bindings, crossUnitBindings),
-    };
+    return row;
   }
 
   private async getReadyToProductionMap(featureVersionIds: readonly string[]) {
-    const ids = [...new Set(featureVersionIds)];
-    if (ids.length === 0) return new Map<string, boolean>();
-
-    const results = await Promise.all(
-      ids.map(async (id) => {
-        try {
-          return await this.loadBindingReadiness(id);
-        } catch {
-          return undefined;
-        }
-      }),
-    );
-
+    const loaded = await this.loadBindingReadinessBatch(featureVersionIds);
     return new Map(
-      results
-        .filter((row): row is FeatureVersionBindingLoad => row !== undefined)
-        .map((row) => {
-          const ready = row.status !== VersionStatus.Draft ? false : row.readyToProduction;
-          return [row.id, ready] as const;
-        }),
+      [...loaded.values()].map((row) => {
+        const ready = row.status !== VersionStatus.Draft ? false : row.readyToProduction;
+        return [row.id, ready] as const;
+      }),
     );
   }
 
@@ -362,10 +371,16 @@ export class FeatureVersionService {
       componentVersionId: payload.componentVersionId,
     });
     const ids = collectedStrings(result.records);
+    if (ids.length === 0) return;
 
+    const loaded = await this.loadBindingReadinessBatch(ids);
     for (const featureVersionId of ids) {
+      const row = loaded.get(featureVersionId);
+      if (!row) continue;
+      if (row.status !== VersionStatus.Draft) continue;
+      if (!(row.canAutoActive && row.readyToProduction)) continue;
       try {
-        await this.autoActivateIfReady(featureVersionId);
+        await this.publish({ featureVersionId });
       } catch (error) {
         if (!(error instanceof BadRequestException)) {
           throw error;

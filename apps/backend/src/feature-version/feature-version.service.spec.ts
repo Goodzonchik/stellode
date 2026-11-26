@@ -32,6 +32,16 @@ const mkBindingRow = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 });
 
+const idsFromParams = (params?: Record<string, unknown>): string[] => {
+  if (Array.isArray(params?.ids)) {
+    return params.ids.filter((id): id is string => typeof id === 'string');
+  }
+  if (typeof params?.featureVersionId === 'string') {
+    return [params.featureVersionId];
+  }
+  return [];
+};
+
 const createService = async (
   read: jest.Mock,
   write: jest.Mock = jest.fn(),
@@ -82,17 +92,23 @@ describe('FeatureVersionService', () => {
             };
           }
           if (query.includes('AS bindingRows')) {
-            const id = String(params?.featureVersionId ?? '');
-            const matched = versions.find((item) => item.id === id);
+            const ids = idsFromParams(params);
             return {
-              records: [
-                mkRecord({
+              records: ids.map((id) => {
+                const matched = versions.find((item) => item.id === id);
+                return mkRecord({
                   id,
                   status: matched?.properties.status ?? 'unactive',
                   canAutoActive: false,
                   bindingRows: [],
-                }),
-              ],
+                });
+              }),
+            };
+          }
+          if (query.includes('AS crossUnitBindingRows')) {
+            const ids = idsFromParams(params);
+            return {
+              records: ids.map((id) => mkRecord({ id, crossUnitBindingRows: [] })),
             };
           }
           return { records: [] };
@@ -110,10 +126,21 @@ describe('FeatureVersionService', () => {
         expect.stringContaining('INHERITED'),
         expect.any(Object),
       );
+      const readinessReads = read.mock.calls.filter(
+        (call) =>
+          String(call[0]).includes('AS bindingRows') ||
+          String(call[0]).includes('AS crossUnitBindingRows'),
+      );
+      expect(readinessReads).toHaveLength(2);
+      expect(readinessReads[0][1]).toEqual(
+        expect.objectContaining({ ids: expect.arrayContaining(['d1', 'd2', 'a1']) }),
+      );
       expect(result.map((item) => item.id)).toEqual(['d2', 'd1', 'a1', 'a2', 'u1', 'u2']);
       expect(result.every((item) => item.componentCount === 0 && item.teamCount === 0)).toBe(true);
       expect(result.find((item) => item.id === 'd2')?.inheritedFromId).toBe('a1');
       expect(result.find((item) => item.id === 'a1')?.inheritedFromId).toBeNull();
+      expect(result.find((item) => item.id === 'd1')?.readyToProduction).toBe(false);
+      expect(result.find((item) => item.id === 'a1')?.readyToProduction).toBe(false);
     });
 
     it('returns distinct componentVersion and team counts from relations query', async () => {
@@ -178,6 +205,131 @@ describe('FeatureVersionService', () => {
         expect.stringContaining('count(DISTINCT team.id) AS teamCount'),
         expect.any(Object),
       );
+    });
+
+    it('loads readyToProduction for many versions with two readiness reads', async () => {
+      const versions = [
+        mkFvNode({ id: 'd1', status: 'draft', versionNumber: 1, version: '1' }),
+        mkFvNode({ id: 'd2', status: 'draft', versionNumber: 2, version: '2' }),
+        mkFvNode({ id: 'a1', status: 'active', versionNumber: 3, version: '3' }),
+      ];
+      const read = jest
+        .fn()
+        .mockImplementation(async (query: string, params?: Record<string, unknown>) => {
+          if (query.includes('AS featureVersion')) {
+            return {
+              records: versions.map((featureVersion) =>
+                mkRecord({
+                  featureVersion,
+                  services: [],
+                  componentVersions: [],
+                  componentCount: 0,
+                  teamCount: 0,
+                  inheritedFromId: null,
+                }),
+              ),
+            };
+          }
+          if (query.includes('AS bindingRows')) {
+            const ids = idsFromParams(params);
+            return {
+              records: ids.map((id) =>
+                mkRecord({
+                  id,
+                  status: versions.find((item) => item.id === id)?.properties.status ?? 'draft',
+                  canAutoActive: false,
+                  bindingRows: id.startsWith('d') ? [mkBindingRow()] : [],
+                }),
+              ),
+            };
+          }
+          if (query.includes('AS crossUnitBindingRows')) {
+            return {
+              records: idsFromParams(params).map((id) =>
+                mkRecord({ id, crossUnitBindingRows: [] }),
+              ),
+            };
+          }
+          return { records: [] };
+        });
+
+      const service = await createService(read);
+      const result = await service.getFeatureVersionsByFeatureElementId('feature-id');
+
+      const readinessReads = read.mock.calls.filter(
+        (call) =>
+          String(call[0]).includes('AS bindingRows') ||
+          String(call[0]).includes('AS crossUnitBindingRows'),
+      );
+      expect(readinessReads).toHaveLength(2);
+      expect(result.find((item) => item.id === 'd1')?.readyToProduction).toBe(true);
+      expect(result.find((item) => item.id === 'd2')?.readyToProduction).toBe(true);
+      expect(result.find((item) => item.id === 'a1')?.readyToProduction).toBe(false);
+    });
+  });
+
+  describe('handleComponentVersionStatusChanged', () => {
+    it('batches readiness and publishes only ready auto-active drafts', async () => {
+      const read = jest
+        .fn()
+        .mockImplementation(async (query: string, params?: Record<string, unknown>) => {
+          if (
+            query.includes("status: 'draft'") &&
+            query.includes('USES_COMPONENT_VERSION') &&
+            query.includes('RETURN DISTINCT fv.id')
+          ) {
+            return {
+              records: [mkRecord({ value: 'fv-ready' }), mkRecord({ value: 'fv-skip' })],
+            };
+          }
+          if (query.includes('AS bindingRows')) {
+            const ids = idsFromParams(params);
+            return {
+              records: ids.map((id) =>
+                mkRecord({
+                  id,
+                  status: 'draft',
+                  canAutoActive: id === 'fv-ready',
+                  bindingRows: id === 'fv-ready' ? [mkBindingRow()] : [],
+                }),
+              ),
+            };
+          }
+          if (query.includes('AS crossUnitBindingRows')) {
+            return {
+              records: idsFromParams(params).map((id) =>
+                mkRecord({ id, crossUnitBindingRows: [] }),
+              ),
+            };
+          }
+          if (query.includes('usesAppIds')) {
+            return {
+              records: [mkRecord({ usesAppIds: ['app-1'], providerAppIds: [] })],
+            };
+          }
+          if (query.includes('PINNED') || query.includes('applicationVersionId')) {
+            return {
+              records: [mkRecord({ applicationId: 'app-1', applicationVersionId: 'av-1' })],
+            };
+          }
+          return { records: [] };
+        });
+      const write = jest.fn().mockResolvedValue({
+        records: [mkRecord({ draft: mkFvNode({ id: 'fv-ready', status: 'active' }) })],
+      });
+      const service = await createService(read, write);
+      const publishSpy = jest.spyOn(service, 'publish');
+
+      await service.handleComponentVersionStatusChanged({ componentVersionId: 'cv-1' });
+
+      const batchReadsBeforePublish = read.mock.calls
+        .slice(0, 3)
+        .map((call) => String(call[0]));
+      expect(batchReadsBeforePublish[0]).toContain('RETURN DISTINCT fv.id');
+      expect(batchReadsBeforePublish[1]).toContain('AS bindingRows');
+      expect(batchReadsBeforePublish[2]).toContain('AS crossUnitBindingRows');
+      expect(publishSpy).toHaveBeenCalledTimes(1);
+      expect(publishSpy).toHaveBeenCalledWith({ featureVersionId: 'fv-ready' });
     });
   });
 
@@ -348,7 +500,7 @@ describe('FeatureVersionService', () => {
         expect.stringMatching(
           /OPTIONAL MATCH \(c:Component \{id: cv\.componentId\}\)[\s\S]*componentName: coalesce\(c\.name, cv\.name, ''\)/,
         ),
-        expect.objectContaining({ featureVersionId: 'fv1' }),
+        expect.objectContaining({ ids: ['fv1'] }),
       );
     });
 
@@ -467,6 +619,7 @@ describe('FeatureVersionService', () => {
           return {
             records: [
               mkRecord({
+                id: 'fv1',
                 crossUnitBindingRows: [
                   mkBindingRow({
                     applicationId: 'app-remote',
@@ -519,6 +672,7 @@ describe('FeatureVersionService', () => {
           return {
             records: [
               mkRecord({
+                id: 'fv1',
                 crossUnitBindingRows: [
                   mkBindingRow({
                     applicationId: 'app-remote',

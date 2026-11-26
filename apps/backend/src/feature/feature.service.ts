@@ -2,7 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { mergeCypherSetParts, optionalDescriptionSet } from '../common/set-parts';
 import { assertUnitScopedNameUnique, normalizeEntityName } from '../common/entity-name';
-import { idNamesFromProjectRecords, isGraphNode } from '../common/graph-helpers';
+import { filterIdNames, idNamesFromProjectRecords, isGraphNode } from '../common/graph-helpers';
 import { getGraphNodeProperties } from '../common/graph-node-properties';
 import { Neo4jService, type GraphNode } from '../neo4j/neo4j.service';
 
@@ -144,26 +144,26 @@ export class FeatureService {
   async findAll(data: { unitId: string }) {
     const query = `
       MATCH (:Unit {id: $unitId})-[:STAKEHOLDER]->(feature:Feature)
-      RETURN feature
+      OPTIONAL MATCH (service:Service)-[aggregatesEdge:AGGREGATES]->(feature)
+        WHERE coalesce(aggregatesEdge.deleted, false) = false
+      WITH feature, collect(DISTINCT CASE
+        WHEN service IS NULL THEN NULL
+        ELSE {id: service.id, name: service.name}
+      END) AS services
+      RETURN feature, services
       ORDER BY feature.name ASC
     `;
     const result = await this.neo4jService.read(query, { unitId: data.unitId });
-    const features = result.records
-      .map((record) => record.get('feature'))
-      .filter(isGraphNode)
-      .map(mapNodeToFeature);
-
-    const featuresWithServices = await Promise.all(
-      features.map(async (feature) => {
-        const servicesResult = await this.neo4jService.read(activeServicesForFeatureQuery, {
-          featureId: feature.id,
-        });
-        const services = idNamesFromProjectRecords(servicesResult.records);
-        return { ...feature, services };
-      }),
-    );
-
-    return featuresWithServices;
+    return result.records
+      .map((record) => {
+        const node = record.get('feature');
+        if (!isGraphNode(node)) return null;
+        return {
+          ...mapNodeToFeature(node),
+          services: filterIdNames(record.get('services')),
+        };
+      })
+      .filter((row): row is FeatureWithServices => row !== null);
   }
 
   async findById(id: string): Promise<FeatureWithServices | null> {
