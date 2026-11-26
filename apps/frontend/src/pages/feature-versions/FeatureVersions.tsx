@@ -7,7 +7,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { FeatureReadinessModal } from '../../components/FeatureReadinessModal';
 import { ImpactConfirmDialog } from '../../components/ImpactConfirmDialog';
 import { VersionLifecycleStatusTag } from '../../components/VersionLifecycleStatusTag';
-import { getErrorMessage, getErrorMessageFromRequest } from '../../utils/axios-error';
+import { getErrorMessage } from '../../utils/axios-error';
 import { featureVersionNeedsCriticalConfirm } from '../../utils/version-transition-guard';
 import { useFeatureVersionReadinessCheck } from '../../hooks/useFeatureVersionReadinessCheck';
 import { ToastVariant, useToast } from '../../hooks/useToast';
@@ -142,7 +142,7 @@ export function FeatureVersions() {
       setCreateOpen(false);
       loadFeatures();
     } catch (err: unknown) {
-      const text = getErrorMessageFromRequest(err, 'Не удалось создать версию');
+      const text = getErrorMessage(err, 'Не удалось создать версию');
       showToast(text, ToastVariant.Error);
     } finally {
       setCreateLoading(false);
@@ -159,7 +159,7 @@ export function FeatureVersions() {
     try {
       await runTransition(feature, target);
     } catch (err: unknown) {
-      const text = getErrorMessageFromRequest(err, 'Переход статуса не выполнен');
+      const text = getErrorMessage(err, 'Переход статуса не выполнен');
       showToast(text, ToastVariant.Error);
     }
   };
@@ -173,7 +173,7 @@ export function FeatureVersions() {
     try {
       await runTransition(feature, target);
     } catch (err: unknown) {
-      const text = getErrorMessageFromRequest(err, 'Переход статуса не выполнен');
+      const text = getErrorMessage(err, 'Переход статуса не выполнен');
       showToast(text, ToastVariant.Error);
     }
   };
@@ -211,7 +211,7 @@ export function FeatureVersions() {
         return;
       }
       showToast(
-        getErrorMessageFromRequest(err, 'Не удалось удалить версию'),
+        getErrorMessage(err, 'Не удалось удалить версию'),
         ToastVariant.Error,
       );
       closeDeleteModal();

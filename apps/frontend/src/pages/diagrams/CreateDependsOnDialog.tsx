@@ -8,7 +8,7 @@ import { featuresApi } from '../../api/features-api';
 import { servicesApi } from '../../api/services-api';
 import type { ApplicationEntity, DependsOnContextDto } from '@stellode/models';
 import { ToastVariant, useToast } from '../../hooks/useToast';
-import { getErrorMessageFromRequest } from '../../utils/axios-error';
+import { getErrorMessage } from '../../utils/axios-error';
 import { shouldDisableEmptyOptionsSelect } from '../../utils/should-disable-empty-options-select';
 import { ApplicationCreateDialog } from '../applications/ApplicationCreateDialog';
 import type { DependsOnConnection } from './depends-on-connection';
@@ -268,7 +268,7 @@ export function CreateDependsOnDialog({
       showToast('Зависимость DEPENDS_ON создана', ToastVariant.Success);
       close();
     } catch (err: unknown) {
-      const msg = getErrorMessageFromRequest(err, 'Не удалось создать DEPENDS_ON');
+      const msg = getErrorMessage(err, 'Не удалось создать DEPENDS_ON');
 
       setError(msg);
       showToast(msg, ToastVariant.Error);

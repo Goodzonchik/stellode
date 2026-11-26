@@ -5,7 +5,7 @@ import {
   ReleasePreviewMode,
   type ReleasePreviewResponse,
 } from '@stellode/models';
-import { getErrorMessageFromRequest } from '../../utils/axios-error';
+import { getErrorMessage } from '../../utils/axios-error';
 import { ReleasePreviewContent } from './ReleasePreviewContent';
 
 export type RevertConsequencesModalProps = {
@@ -38,7 +38,7 @@ export function RevertConsequencesModal(props: RevertConsequencesModalProps) {
         });
         setPreview(previewData);
       } catch (errorValue: unknown) {
-        setError(getErrorMessageFromRequest(errorValue, 'Не удалось загрузить последствия отката'));
+        setError(getErrorMessage(errorValue, 'Не удалось загрузить последствия отката'));
       } finally {
         setLoading(false);
       }
@@ -64,7 +64,7 @@ export function RevertConsequencesModal(props: RevertConsequencesModalProps) {
       props.onReverted();
       props.onClose();
     } catch (errorValue: unknown) {
-      setError(getErrorMessageFromRequest(errorValue, 'Не удалось выполнить откат'));
+      setError(getErrorMessage(errorValue, 'Не удалось выполнить откат'));
     } finally {
       setSubmitting(false);
     }

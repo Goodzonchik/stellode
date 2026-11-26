@@ -60,10 +60,8 @@
 
 ### P2 — полезные упрощения
 
-- [x] Удалить мёртвый `apps/frontend/src/pages/diagrams/extract-feature-version-compare-sets-from-diagram.ts` (импортов нет)
 - [ ] Inline `mayBeginHubDiagramRelayout` (`base !== null`) + удалить файл/spec
 - [ ] Общий `serializeCv` / сериализация CV (`component-version` + `application-version`)
-- [ ] Унифицировать `getErrorMessage` / `getErrorMessageFromRequest` в `axios-error.ts`
 - [ ] Общий паттерн load/error/toast для CRUD-страниц (`units`, `Teams`, `Features`, …) — без TanStack Query на первом шаге
 - [ ] Вынести разделяемую часть `releaseCompositionRules.ts` в `libs/models`; сверить с BE release path
 

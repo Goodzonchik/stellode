@@ -6,7 +6,7 @@ import { servicesApi } from '../../api/services-api';
 import type { ColumnsType } from 'antd/es/table';
 import { resolveUnitScopedHighlightMismatch } from '../../common/list-highlight/resolve-unit-scoped-highlight-mismatch';
 import { useListRowHighlight } from '../../common/list-highlight/use-list-row-highlight';
-import { getErrorMessage, getErrorMessageFromRequest } from '../../utils/axios-error';
+import { getErrorMessage } from '../../utils/axios-error';
 import { ToastVariant, useToast } from '../../hooks/useToast';
 import { useUnit } from '../../context/UnitContext';
 import type { DictionaryNode } from '../components/dictionary-node';
@@ -162,7 +162,7 @@ export function Features() {
       showToast('Фича сохранена', ToastVariant.Success);
       loadFeatures();
     } catch (err: unknown) {
-      const messageText = getErrorMessageFromRequest(err, 'Не удалось сохранить фичу');
+      const messageText = getErrorMessage(err, 'Не удалось сохранить фичу');
 
       setError(messageText);
       showToast(messageText, ToastVariant.Error);
@@ -179,7 +179,7 @@ export function Features() {
       showToast('Фича удалена', ToastVariant.Success);
       loadFeatures();
     } catch (err: unknown) {
-      const messageText = getErrorMessageFromRequest(err, 'Не удалось удалить фичу');
+      const messageText = getErrorMessage(err, 'Не удалось удалить фичу');
       showToast(messageText, ToastVariant.Error);
     }
   };

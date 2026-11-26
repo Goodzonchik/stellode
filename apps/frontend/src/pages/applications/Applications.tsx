@@ -4,7 +4,7 @@ import { applicationsApi } from '../../api/applications-api';
 import type { ColumnsType } from 'antd/es/table';
 import { resolveUnitScopedHighlightMismatch } from '../../common/list-highlight/resolve-unit-scoped-highlight-mismatch';
 import { useListRowHighlight } from '../../common/list-highlight/use-list-row-highlight';
-import { getErrorMessage, getErrorMessageFromRequest } from '../../utils/axios-error';
+import { getErrorMessage } from '../../utils/axios-error';
 import { ToastVariant, useToast } from '../../hooks/useToast';
 import { useUnit } from '../../context/UnitContext';
 import { useNavigate } from 'react-router-dom';
@@ -103,7 +103,7 @@ export function Applications() {
       showToast('Приложение сохранено', ToastVariant.Success);
       void loadApplication();
     } catch (err: unknown) {
-      const messageText = getErrorMessageFromRequest(err, 'Не удалось сохранить приложение');
+      const messageText = getErrorMessage(err, 'Не удалось сохранить приложение');
       setError(messageText);
       showToast(messageText, ToastVariant.Error);
     }
@@ -119,7 +119,7 @@ export function Applications() {
       showToast('Приложение удалено', ToastVariant.Success);
       void loadApplication();
     } catch (err: unknown) {
-      const messageText = getErrorMessageFromRequest(err, 'Не удалось удалить приложение');
+      const messageText = getErrorMessage(err, 'Не удалось удалить приложение');
       showToast(messageText, ToastVariant.Error);
     }
   };

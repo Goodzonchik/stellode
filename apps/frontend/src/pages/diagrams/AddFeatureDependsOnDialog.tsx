@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Alert, Button, Modal, Select, Space, Typography } from 'antd';
 import { edgeApi } from '../../api/edge-api';
 import { ToastVariant, useToast } from '../../hooks/useToast';
-import { getErrorMessageFromRequest } from '../../utils/axios-error';
+import { getErrorMessage } from '../../utils/axios-error';
 import { buildSameFeatureDependsOnDto } from './build-same-feature-depends-on-dto';
 import type { FeatureVersionUsesCvOption } from './collect-feature-version-uses-cv-options';
 
@@ -112,7 +112,7 @@ export function AddFeatureDependsOnDialog({
       showToast('Связь DEPENDS_ON создана', ToastVariant.Success);
       close();
     } catch (err: unknown) {
-      const msg = getErrorMessageFromRequest(err, 'Не удалось создать DEPENDS_ON');
+      const msg = getErrorMessage(err, 'Не удалось создать DEPENDS_ON');
       setError(msg);
       showToast(msg, ToastVariant.Error);
     } finally {

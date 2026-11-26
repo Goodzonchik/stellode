@@ -5,7 +5,7 @@ import type {
   ComponentVersionStatusWarning,
   StatusWarningCandidate,
 } from '@stellode/models';
-import { getErrorMessageFromRequest } from '../utils/axios-error';
+import { getErrorMessage } from '../utils/axios-error';
 import { ToastVariant, useToast } from '../hooks/useToast';
 import './StatusWarningModal.css';
 
@@ -74,7 +74,7 @@ export const StatusWarningModal = (props: StatusWarningModalProps) => {
       } catch (error: unknown) {
         if (cancelled) return;
         showToast(
-          getErrorMessageFromRequest(error, 'Не удалось загрузить предупреждение'),
+          getErrorMessage(error, 'Не удалось загрузить предупреждение'),
           ToastVariant.Error,
         );
         props.onClose();
@@ -96,7 +96,7 @@ export const StatusWarningModal = (props: StatusWarningModalProps) => {
       setStep('details');
     } catch (error: unknown) {
       showToast(
-        getErrorMessageFromRequest(error, 'Не удалось загрузить предупреждение'),
+        getErrorMessage(error, 'Не удалось загрузить предупреждение'),
         ToastVariant.Error,
       );
     } finally {

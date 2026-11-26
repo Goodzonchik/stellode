@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { type AxiosError } from 'axios';
 
 const serverUnavailableRu =
   'Не удаётся связаться с сервером. Проверьте, что API запущен и база данных доступна.';
@@ -7,32 +7,30 @@ const databaseUnavailableRu = 'База данных временно недос
 
 const messageFromResponseData = (data: object): string | undefined => {
   if (!('message' in data)) return undefined;
-  const m = (data as { message: unknown }).message;
-  if (typeof m === 'string' && m.length > 0) return m;
+  const message = (data as { message: unknown }).message;
+  if (typeof message === 'string' && message.length > 0) return message;
   return undefined;
 };
 
-export const getErrorMessage = (e: unknown): string => {
-  if (axios.isAxiosError(e)) {
-    if (!e.response) return serverUnavailableRu;
-    const { status, data } = e.response;
-    if (data && typeof data === 'object') {
-      const fromBody = messageFromResponseData(data);
-      if (fromBody) return fromBody;
-    }
-    if (status === 503) return databaseUnavailableRu;
-    return e.message;
+const messageFromAxiosError = (error: AxiosError): string | undefined => {
+  if (!error.response) return serverUnavailableRu;
+  const { status, data } = error.response;
+  if (data && typeof data === 'object') {
+    const fromBody = messageFromResponseData(data);
+    if (fromBody) return fromBody;
   }
-  return e instanceof Error ? e.message : 'Unknown error';
+  if (status === 503) return databaseUnavailableRu;
+  if (error.message.length > 0) return error.message;
+  return undefined;
 };
 
-export const getErrorMessageFromRequest = (
+export const getErrorMessage = (
   error: unknown,
-  fallback = 'Произошла ошибка',
+  fallback = 'Unknown error',
 ): string => {
-  if (axios.isAxiosError<{ message?: string }>(error)) {
-    return error.response?.data?.message ?? fallback;
+  if (axios.isAxiosError(error)) {
+    return messageFromAxiosError(error) ?? fallback;
   }
-
+  if (error instanceof Error && error.message.length > 0) return error.message;
   return fallback;
 };

@@ -6,7 +6,7 @@ import { Alert, Button, Form, Input, Modal, Select, Space, Table, Typography } f
 import type { ColumnsType } from 'antd/es/table';
 import { resolveUnitScopedHighlightMismatch } from '../../common/list-highlight/resolve-unit-scoped-highlight-mismatch';
 import { useListRowHighlight } from '../../common/list-highlight/use-list-row-highlight';
-import { getErrorMessage, getErrorMessageFromRequest } from '../../utils/axios-error';
+import { getErrorMessage } from '../../utils/axios-error';
 import { ToastVariant, useToast } from '../../hooks/useToast';
 import { useUnit } from '../../context/UnitContext';
 import { ComponentCreateDialog } from './ComponentCreateDialog';
@@ -149,7 +149,7 @@ export function Components() {
       showToast('Компонент сохранён', ToastVariant.Success);
       loadComponents();
     } catch (err: unknown) {
-      const text = getErrorMessageFromRequest(err, 'Не удалось сохранить компонент');
+      const text = getErrorMessage(err, 'Не удалось сохранить компонент');
 
       setError(text);
       showToast(text, ToastVariant.Error);
@@ -166,7 +166,7 @@ export function Components() {
       showToast('Компонент удалён', ToastVariant.Success);
       loadComponents();
     } catch (err: unknown) {
-      const text = getErrorMessageFromRequest(err, 'Не удалось удалить компонент');
+      const text = getErrorMessage(err, 'Не удалось удалить компонент');
       showToast(text, ToastVariant.Error);
     }
   };

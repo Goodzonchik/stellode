@@ -7,7 +7,7 @@ import { useListRowHighlight } from '../../common/list-highlight/use-list-row-hi
 import { useUnit } from '../../context/UnitContext';
 import { useNavigate } from 'react-router-dom';
 import type { CreateTeamDto, TeamEntity, UpdateTeamDto } from '@stellode/models';
-import { getErrorMessage, getErrorMessageFromRequest } from '../../utils/axios-error';
+import { getErrorMessage } from '../../utils/axios-error';
 import { ToastVariant, useToast } from '../../hooks/useToast';
 import { teamDiagramPath } from '../diagrams/spa-diagram-paths';
 
@@ -118,7 +118,7 @@ export function Teams() {
       showToast('Команда сохранена', ToastVariant.Success);
       loadTeams();
     } catch (err: unknown) {
-      const messageText = getErrorMessageFromRequest(err, 'Не удалось сохранить команду');
+      const messageText = getErrorMessage(err, 'Не удалось сохранить команду');
 
       setError(messageText);
       showToast(messageText, ToastVariant.Error);
@@ -135,7 +135,7 @@ export function Teams() {
       showToast('Команда удалена', ToastVariant.Success);
       loadTeams();
     } catch (err: unknown) {
-      const messageText = getErrorMessageFromRequest(err, 'Не удалось удалить команду');
+      const messageText = getErrorMessage(err, 'Не удалось удалить команду');
       showToast(messageText, ToastVariant.Error);
     }
   };

@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import type { CheckFeatureVersionReadyResult } from '@stellode/models';
 import { featureVersionsApi } from '../api/feature-versions-api';
-import { getErrorMessageFromRequest } from '../utils/axios-error';
+import { getErrorMessage } from '../utils/axios-error';
 import { selectFeatureReadinessToast } from '../pages/feature-versions/select-feature-readiness-toast';
 import { shouldOpenFeatureReadinessModal } from '../pages/feature-versions/should-open-feature-readiness-modal';
 import { ToastVariant, useToast } from './useToast';
@@ -33,7 +33,7 @@ export const useFeatureVersionReadinessCheck = (onChecked?: () => void) => {
         onCheckedRef.current?.();
       } catch (err: unknown) {
         showToast(
-          getErrorMessageFromRequest(err, 'Проверка не выполнена'),
+          getErrorMessage(err, 'Проверка не выполнена'),
           ToastVariant.Error,
         );
       }

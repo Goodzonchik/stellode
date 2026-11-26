@@ -5,7 +5,7 @@ import { Button, Input, Modal, Table } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { VersionLifecycleStatusTag } from '../../components/VersionLifecycleStatusTag';
 import { useStatusWarning } from '../../context/StatusWarningContext';
-import { getErrorMessage, getErrorMessageFromRequest } from '../../utils/axios-error';
+import { getErrorMessage } from '../../utils/axios-error';
 import { ToastVariant, useToast } from '../../hooks/useToast';
 import {
   parseVersionStatus,
@@ -68,7 +68,7 @@ export function ComponentVersions() {
       setCreateOpen(false);
       loadRows();
     } catch (err: unknown) {
-      const text = getErrorMessageFromRequest(err, 'Не удалось создать версию');
+      const text = getErrorMessage(err, 'Не удалось создать версию');
       showToast(text, ToastVariant.Error);
     } finally {
       setCreateLoading(false);

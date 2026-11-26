@@ -5,7 +5,7 @@ import { servicesApi } from '../../api/services-api';
 import type { ColumnsType } from 'antd/es/table';
 import { resolveUnitScopedHighlightMismatch } from '../../common/list-highlight/resolve-unit-scoped-highlight-mismatch';
 import { useListRowHighlight } from '../../common/list-highlight/use-list-row-highlight';
-import { getErrorMessage, getErrorMessageFromRequest } from '../../utils/axios-error';
+import { getErrorMessage } from '../../utils/axios-error';
 import { ToastVariant, useToast } from '../../hooks/useToast';
 import { useUnit } from '../../context/UnitContext';
 import { useNavigate } from 'react-router-dom';
@@ -157,7 +157,7 @@ export function Services() {
       showToast('Услуга сохранена', ToastVariant.Success);
       void loadUnitLists();
     } catch (err: unknown) {
-      const text = getErrorMessageFromRequest(err, 'Не удалось сохранить услуга');
+      const text = getErrorMessage(err, 'Не удалось сохранить услуга');
 
       setError(text);
       showToast(text, ToastVariant.Error);
@@ -173,7 +173,7 @@ export function Services() {
       setArchiveTarget(null);
       void loadUnitLists();
     } catch (err: unknown) {
-      const errorMessage = getErrorMessageFromRequest(err, 'Не удалось заархивировать услуга');
+      const errorMessage = getErrorMessage(err, 'Не удалось заархивировать услуга');
 
       showToast(errorMessage, ToastVariant.Error);
       setError(errorMessage);
@@ -189,7 +189,7 @@ export function Services() {
       setUnarchiveTarget(null);
       void loadUnitLists();
     } catch (err: unknown) {
-      const errorMessage = getErrorMessageFromRequest(err, 'Не удалось вернуть услуга из архива');
+      const errorMessage = getErrorMessage(err, 'Не удалось вернуть услуга из архива');
 
       showToast(errorMessage, ToastVariant.Error);
       setError(errorMessage);

@@ -8,7 +8,7 @@ import { QuestionCircleOutlined } from '@ant-design/icons';
 import type { ApplicationEntity } from '@stellode/models';
 import { ToastVariant, useToast } from '../../hooks/useToast';
 import type { DictionaryNode } from './dictionary-node';
-import { getErrorMessageFromRequest } from '../../utils/axios-error';
+import { getErrorMessage } from '../../utils/axios-error';
 import { shouldDisableEmptyOptionsSelect } from '../../utils/should-disable-empty-options-select';
 import { ApplicationCreateDialog } from '../applications/ApplicationCreateDialog';
 
@@ -132,7 +132,7 @@ export function ComponentCreateDialog({
       showToast('Компонент создан', ToastVariant.Success);
       close();
     } catch (err: unknown) {
-      const msg = getErrorMessageFromRequest(err, 'Не удалось создать компонент');
+      const msg = getErrorMessage(err, 'Не удалось создать компонент');
       setError(msg);
       showToast(msg, ToastVariant.Error);
     }

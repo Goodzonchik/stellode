@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Alert, Button, Form, Input, Modal, Space } from 'antd';
 import { applicationsApi } from '../../api/applications-api';
 import type { ApplicationEntity, CreateApplicationDto } from '@stellode/models';
-import { getErrorMessageFromRequest } from '../../utils/axios-error';
+import { getErrorMessage } from '../../utils/axios-error';
 import { ToastVariant, useToast } from '../../hooks/useToast';
 
 export type ApplicationCreateDialogProps = {
@@ -59,7 +59,7 @@ export function ApplicationCreateDialog({
       form.resetFields();
       onCreated(created);
     } catch (err: unknown) {
-      const messageText = getErrorMessageFromRequest(err, 'Не удалось сохранить приложение');
+      const messageText = getErrorMessage(err, 'Не удалось сохранить приложение');
       setError(messageText);
       showToast(messageText, ToastVariant.Error);
     } finally {
