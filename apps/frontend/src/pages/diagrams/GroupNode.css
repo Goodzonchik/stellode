@@ -64,7 +64,7 @@
   --group-node-header-border: rgba(155, 127, 212, 0.6);
 }
 
-/* Unit: цвет рамки — CSS-переменные из FNV→HSL по data.unitId (build-group-node-unit-accent-style) */
+/* Unit: цвет рамки — CSS-переменные из FNV→HSL по data.unitId (unit-group-accent) */
 
 .group-node--impact {
   outline: 3px solid #1677ff;

@@ -7,15 +7,15 @@ import {
   ZoomInOutlined,
   ZoomOutOutlined,
 } from '@ant-design/icons';
-import { HELP_FULL_VIEW_SCALE_STEP } from './clamp-help-full-view-scale';
-import { buildHelpFullViewFitTransform } from './build-help-full-view-fit-transform';
 import {
+  buildHelpFullViewFitTransform,
   HELP_FULL_VIEW_DEFAULT_TRANSFORM,
+  HELP_FULL_VIEW_SCALE_STEP,
+  panHelpFullViewTransform,
   type HelpFullViewTransform,
+  zoomHelpFullViewTransform,
 } from './help-full-view-transform';
-import { panHelpFullViewTransform } from './pan-help-full-view-transform';
 import { readHelpFullViewSvgSize } from './read-help-full-view-svg-size';
-import { zoomHelpFullViewTransform } from './zoom-help-full-view-transform';
 
 type HelpFullViewMermaidViewerProps = {
   readonly svgHtml: string;

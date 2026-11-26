@@ -3,7 +3,7 @@ import { Handle, type Node, type NodeProps } from '@xyflow/react';
 import { AppstoreOutlined, BankOutlined } from '@ant-design/icons';
 import type { ViewNode } from '@stellode/models';
 import { buildGroupNodeClassName } from './build-group-node-class-name';
-import { buildGroupNodeUnitAccentStyle } from './build-group-node-unit-accent-style';
+import { buildGroupNodeUnitAccentStyle } from './unit-group-accent';
 import { groupNodeCaption } from './group-node-caption';
 import { isGroupNodeUnitType } from './is-group-node-unit-type';
 import { toHandlePosition } from './to-handle-position';
