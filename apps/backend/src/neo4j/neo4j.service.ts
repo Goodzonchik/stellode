@@ -24,6 +24,11 @@ export interface GraphQueryResult {
   records: GraphQueryRecord[];
 }
 
+export type Neo4jRun = (
+  query: string,
+  parameters?: Record<string, unknown>,
+) => Promise<GraphQueryResult>;
+
 const isDriverNode = (value: object): boolean =>
   'labels' in value && 'properties' in value && 'identity' in value;
 
@@ -127,6 +132,21 @@ export class Neo4jService implements OnApplicationShutdown {
     try {
       const result = await session.executeWrite((tx) => tx.run(query, parameters ?? {}));
       return toQueryResult(result.records);
+    } finally {
+      await session.close();
+    }
+  }
+
+  async writeInTransaction<T>(work: (run: Neo4jRun) => Promise<T>): Promise<T> {
+    const session = this.driver.session({ defaultAccessMode: neo4j.session.WRITE });
+    try {
+      return await session.executeWrite(async (tx) => {
+        const run: Neo4jRun = async (query, parameters) => {
+          const result = await tx.run(query, parameters ?? {});
+          return toQueryResult(result.records);
+        };
+        return work(run);
+      });
     } finally {
       await session.close();
     }

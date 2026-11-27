@@ -5,7 +5,7 @@ import {
   type ApplicationComponentStatus,
   type VersionStatus as VersionStatusType,
 } from '@stellode/models';
-import type { Neo4jService } from '../neo4j/neo4j.service';
+import type { Neo4jRun, Neo4jService } from '../neo4j/neo4j.service';
 
 export type ComponentVersionStatusChange = {
   readonly componentVersionId: string;
@@ -47,6 +47,7 @@ const groupEdgeStatuses = (rows: readonly EdgeRow[]): Map<string, {
 export const recomputeComponentVersionStatuses = async (
   neo4jService: Neo4jService,
   componentVersionIds: readonly string[],
+  run?: Neo4jRun,
 ): Promise<ComponentVersionStatusChange[]> => {
   const ids = [...new Set(componentVersionIds.filter((id) => id.length > 0))];
   if (ids.length === 0) return [];
@@ -57,7 +58,9 @@ export const recomputeComponentVersionStatuses = async (
     OPTIONAL MATCH (av:ApplicationVersion {status: 'current'})-[hc:HAS_COMPONENT]->(cv)
     RETURN cv.id AS cvId, cv.status AS currentStatus, hc.status AS edgeStatus
   `;
-  const result = await neo4jService.read(query, { ids });
+  const execute: Neo4jRun = run ?? ((q, p) => neo4jService.read(q, p));
+  const write: Neo4jRun = run ?? ((q, p) => neo4jService.write(q, p));
+  const result = await execute(query, { ids });
   const rows: EdgeRow[] = result.records.map((record) => ({
     cvId: String(record.get('cvId') ?? ''),
     currentStatus: String(record.get('currentStatus') ?? ''),
@@ -73,7 +76,7 @@ export const recomputeComponentVersionStatuses = async (
   for (const [componentVersionId, { current, edges }] of grouped) {
     const next = deriveComponentVersionStatus(current, edges);
     if (next === current) continue;
-    await neo4jService.write(
+    await write(
       `MATCH (cv:ComponentVersion {id: $id}) SET cv.status = $status`,
       { id: componentVersionId, status: next },
     );

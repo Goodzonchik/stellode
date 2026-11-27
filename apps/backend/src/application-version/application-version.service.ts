@@ -36,7 +36,8 @@ import {
 } from '../common/parent-version-uniqueness';
 import { componentVersionStatusChangedEvent } from '../common/component-version-events';
 import { recomputeComponentVersionStatuses } from '../common/recompute-component-version-status';
-import { Neo4jService, type GraphNode } from '../neo4j/neo4j.service';
+import { Neo4jService, type GraphNode, type Neo4jRun } from '../neo4j/neo4j.service';
+import type { ComponentVersionStatusChange } from '../common/recompute-component-version-status';
 
 const mapAppVersionRow = (node: GraphNode) => {
   const p = node.properties as Record<string, unknown>;
@@ -517,12 +518,16 @@ export class ApplicationVersionService {
     return { unitId, componentIdByCvId };
   }
 
-  private async publishDraftOnRelease(componentVersionId: string, unitId: string): Promise<void> {
+  private async publishDraftOnRelease(
+    componentVersionId: string,
+    unitId: string,
+    run: Neo4jRun,
+  ): Promise<void> {
     const isDraftQuery = `
       MATCH (cv:ComponentVersion {id: $componentVersionId, unitId: $unitId, status: 'draft'})
       RETURN count(cv) AS value
     `;
-    const isDraft = await this.neo4jService.read(isDraftQuery, { componentVersionId, unitId });
+    const isDraft = await run(isDraftQuery, { componentVersionId, unitId });
     if (Number(isDraft.records[0]?.get('value') ?? 0) === 0) return;
     const query = `
       MATCH (draft:ComponentVersion {id: $componentVersionId, unitId: $unitId, status: 'draft'})
@@ -532,7 +537,7 @@ export class ApplicationVersionService {
       WITH c, draft
       CREATE (c)-[:HAS_VERSION]->(draft)
     `;
-    await this.neo4jService.write(query, { componentVersionId, unitId });
+    await run(query, { componentVersionId, unitId });
   }
 
   private async loadCurrentCompositionIds(applicationVersionId: string): Promise<string[]> {
@@ -544,8 +549,10 @@ export class ApplicationVersionService {
     return result.records.map((r) => String(r.get('value') ?? '')).filter((x) => x.length > 0);
   }
 
-  private async emitStatusChanges(componentVersionIds: readonly string[]): Promise<void> {
-    const changes = await recomputeComponentVersionStatuses(this.neo4jService, componentVersionIds);
+  private emitStatusChangeEvents(
+    componentVersionIds: readonly string[],
+    changes: readonly ComponentVersionStatusChange[],
+  ): void {
     for (const change of changes) {
       this.eventEmitter.emit(componentVersionStatusChangedEvent, {
         componentVersionId: change.componentVersionId,
@@ -556,6 +563,49 @@ export class ApplicationVersionService {
       this.eventEmitter.emit(componentVersionStatusChangedEvent, {
         componentVersionId: id,
       });
+    }
+  }
+
+  private async linkHasComponents(
+    run: Neo4jRun,
+    applicationVersionId: string,
+    unitId: string,
+    rows: ReadonlyArray<{ componentVersionId: string; status: string }>,
+  ): Promise<void> {
+    for (const row of rows) {
+      await run(
+        `
+        MATCH (av:ApplicationVersion {id: $applicationVersionId})
+        MATCH (cv:ComponentVersion {id: $componentVersionId, unitId: $unitId})
+        CREATE (av)-[:HAS_COMPONENT {status: $status}]->(cv)
+        `,
+        {
+          applicationVersionId,
+          componentVersionId: row.componentVersionId,
+          unitId,
+          status: row.status,
+        },
+      );
+    }
+  }
+
+  private async assertLinkedComponentCount(
+    run: Neo4jRun,
+    applicationVersionId: string,
+    componentVersionIds: readonly string[],
+    errorMessage: string,
+  ): Promise<void> {
+    if (componentVersionIds.length === 0) return;
+    const linkedCount = await run(
+      `
+      MATCH (av:ApplicationVersion {id: $applicationVersionId})-[:HAS_COMPONENT]->(cv:ComponentVersion)
+      WHERE cv.id IN $componentVersionIds
+      RETURN count(DISTINCT cv) AS value
+      `,
+      { applicationVersionId, componentVersionIds },
+    );
+    if (Number(linkedCount.records[0]?.get('value') ?? 0) !== componentVersionIds.length) {
+      throw new BadRequestException(errorMessage);
     }
   }
 
@@ -604,132 +654,131 @@ export class ApplicationVersionService {
       dto.version,
     );
 
-    let newId: string;
-    if (isFirstRelease) {
-      const nameQuery = `
-        MATCH (a:Application {id: $applicationId})
-        RETURN a.name AS value
-      `;
-      const nameRes = await this.neo4jService.read(nameQuery, { applicationId: dto.applicationId });
-      const appName = String(nameRes.records[0]?.get('value') ?? '');
-      if (!appName) {
-        throw new BadRequestException('Release failed: application name missing');
-      }
-      newId = randomUUID();
-      const createFirstQuery = `
-        MATCH (app:Application {id: $applicationId})
-        CREATE (newAv:ApplicationVersion {
-          id: $id,
-          applicationId: $applicationId,
-          unitId: $unitId,
-          versionNumber: 1,
-          version: $version,
-          status: 'current',
-          name: $name,
-          type: 'applicationVersion'
-        })
-        CREATE (app)-[:HAS_VERSION]->(newAv)
-        RETURN newAv
-      `;
-      await this.neo4jService.write(createFirstQuery, {
-        applicationId: dto.applicationId,
-        id: newId,
-        unitId,
-        version: releaseVersionString,
-        name: appName,
-      });
-    } else {
-      const preQuery = `
-        MATCH (a:Application {id: $applicationId})
-        OPTIONAL MATCH (a)-[:HAS_VERSION]->(sourceAv:ApplicationVersion {id: $sourceApplicationVersionId, status: 'current'})
-        RETURN a.unitId AS unitId, a.name AS appName, sourceAv.versionNumber AS vnum
-      `;
-      const pre = await this.neo4jService.read(preQuery, {
-        applicationId: dto.applicationId,
-        sourceApplicationVersionId: sourceRaw,
-      });
-      const preRow = pre.records[0];
-      const appName = String(preRow?.get('appName') ?? '');
+    const nameQuery = `
+      MATCH (a:Application {id: $applicationId})
+      OPTIONAL MATCH (a)-[:HAS_VERSION]->(sourceAv:ApplicationVersion {id: $sourceApplicationVersionId, status: 'current'})
+      RETURN a.name AS appName, sourceAv.versionNumber AS vnum
+    `;
+    const pre = await this.neo4jService.read(nameQuery, {
+      applicationId: dto.applicationId,
+      sourceApplicationVersionId: isFirstRelease ? '' : sourceRaw,
+    });
+    const preRow = pre.records[0];
+    const appName = String(preRow?.get('appName') ?? '');
+    if (!appName) {
+      throw new BadRequestException('Release failed: application name missing');
+    }
+    let newVn = 1;
+    if (!isFirstRelease) {
       const rawVn = preRow?.get('vnum');
       const vnum = typeof rawVn === 'number' ? rawVn : Number(rawVn ?? null);
-      if (!unitId || Number.isNaN(vnum)) {
+      if (Number.isNaN(vnum)) {
         throw new BadRequestException(
           'Release failed: source must be current application version and component versions must belong to unit',
         );
       }
-      const newVn = vnum + 1;
-      newId = randomUUID();
-      const createQuery = `
-        MATCH (app:Application {id: $applicationId})
-          -[:HAS_VERSION]->(currentAv:ApplicationVersion {id: $sourceApplicationVersionId, status: 'current'})
-        SET currentAv.status = 'previous'
-        CREATE (newAv:ApplicationVersion {
-          id: $id,
-          applicationId: $applicationId,
-          unitId: $unitId,
-          versionNumber: $versionNumber,
-          version: $version,
-          status: 'current',
-          name: $name,
-          type: 'applicationVersion'
-        })
-        CREATE (app)-[:HAS_VERSION]->(newAv)
-        CREATE (newAv)-[:INHERITED]->(currentAv)
-        RETURN newAv
-      `;
-      await this.neo4jService.write(createQuery, {
-        applicationId: dto.applicationId,
-        sourceApplicationVersionId: sourceRaw,
-        id: newId,
-        unitId,
-        versionNumber: newVn,
-        version: releaseVersionString,
-        name: appName,
-      });
+      newVn = vnum + 1;
     }
 
-    for (const row of components) {
-      const linkQuery = `
-        MATCH (av:ApplicationVersion {id: $applicationVersionId})
-        MATCH (cv:ComponentVersion {id: $componentVersionId, unitId: $unitId})
-        CREATE (av)-[:HAS_COMPONENT {status: $status}]->(cv)
-      `;
-      await this.neo4jService.write(linkQuery, {
-        applicationVersionId: newId,
-        componentVersionId: row.componentVersionId,
-        unitId,
-        status: row.status,
-      });
-    }
-
-    const linkedCountQuery = `
-      MATCH (av:ApplicationVersion {id: $applicationVersionId})-[:HAS_COMPONENT]->(cv:ComponentVersion)
-      WHERE cv.id IN $componentVersionIds
-      RETURN count(DISTINCT cv) AS value
-    `;
+    const newId = randomUUID();
     const componentVersionIds = components.map((c) => c.componentVersionId);
-    const linkedCount = await this.neo4jService.read(linkedCountQuery, {
-      applicationVersionId: newId,
-      componentVersionIds,
-    });
-    if (Number(linkedCount.records[0]?.get('value') ?? 0) !== componentVersionIds.length) {
-      throw new BadRequestException(
-        'Release failed: source must be current application version and component versions must belong to unit',
-      );
-    }
-
-    for (const row of components) {
-      await this.publishDraftOnRelease(row.componentVersionId, unitId);
-    }
-
     const recomputeIds = [...new Set([...previousCompositionIds, ...componentVersionIds])];
-    await this.emitStatusChanges(recomputeIds);
+    const linkFailMessage =
+      'Release failed: source must be current application version and component versions must belong to unit';
 
-    const outRead = await this.neo4jService.read(
-      `MATCH (av:ApplicationVersion {id: $id}) RETURN av`,
-      { id: newId },
-    );
-    return mapAppVersionRow(requireGraphNode(outRead.records[0].get('value') ?? outRead.records[0].get('av')));
+    const { changes, avNode } = await this.neo4jService.writeInTransaction(async (run) => {
+      if (isFirstRelease) {
+        const created = await run(
+          `
+          MATCH (app:Application {id: $applicationId})
+          CREATE (newAv:ApplicationVersion {
+            id: $id,
+            applicationId: $applicationId,
+            unitId: $unitId,
+            versionNumber: 1,
+            version: $version,
+            status: 'current',
+            name: $name,
+            type: 'applicationVersion'
+          })
+          CREATE (app)-[:HAS_VERSION]->(newAv)
+          RETURN newAv
+          `,
+          {
+            applicationId: dto.applicationId,
+            id: newId,
+            unitId,
+            version: releaseVersionString,
+            name: appName,
+          },
+        );
+        if (created.records.length === 0) {
+          throw new BadRequestException('Release failed: application not found');
+        }
+      } else {
+        const created = await run(
+          `
+          MATCH (app:Application {id: $applicationId})
+            -[:HAS_VERSION]->(currentAv:ApplicationVersion {id: $sourceApplicationVersionId, status: 'current'})
+          SET currentAv.status = 'previous'
+          CREATE (newAv:ApplicationVersion {
+            id: $id,
+            applicationId: $applicationId,
+            unitId: $unitId,
+            versionNumber: $versionNumber,
+            version: $version,
+            status: 'current',
+            name: $name,
+            type: 'applicationVersion'
+          })
+          CREATE (app)-[:HAS_VERSION]->(newAv)
+          CREATE (newAv)-[:INHERITED]->(currentAv)
+          RETURN newAv
+          `,
+          {
+            applicationId: dto.applicationId,
+            sourceApplicationVersionId: sourceRaw,
+            id: newId,
+            unitId,
+            versionNumber: newVn,
+            version: releaseVersionString,
+            name: appName,
+          },
+        );
+        if (created.records.length === 0) {
+          throw new BadRequestException(linkFailMessage);
+        }
+      }
+
+      await this.linkHasComponents(
+        run,
+        newId,
+        unitId,
+        components.map((row) => ({
+          componentVersionId: row.componentVersionId,
+          status: row.status,
+        })),
+      );
+      await this.assertLinkedComponentCount(run, newId, componentVersionIds, linkFailMessage);
+
+      for (const row of components) {
+        await this.publishDraftOnRelease(row.componentVersionId, unitId, run);
+      }
+
+      const statusChanges = await recomputeComponentVersionStatuses(
+        this.neo4jService,
+        recomputeIds,
+        run,
+      );
+      const outRead = await run(`MATCH (av:ApplicationVersion {id: $id}) RETURN av`, { id: newId });
+      return {
+        changes: statusChanges,
+        avNode: requireGraphNode(outRead.records[0].get('value') ?? outRead.records[0].get('av')),
+      };
+    });
+
+    this.emitStatusChangeEvents(recomputeIds, changes);
+    return mapAppVersionRow(avNode);
   }
 
   async revert(dto: RevertApplicationDto) {
@@ -810,69 +859,69 @@ export class ApplicationVersionService {
       throw new BadRequestException('Revert failed: source must be current application version');
     }
     const newVn = vnum + 1;
-    const createQuery = `
-      MATCH (app:Application {id: $applicationId})
-        -[:HAS_VERSION]->(currentAv:ApplicationVersion {id: $sourceApplicationVersionId, status: 'current'})
-      SET currentAv.status = 'previous'
-      CREATE (newAv:ApplicationVersion {
-        id: $id,
-        applicationId: $applicationId,
-        unitId: $unitId,
-        versionNumber: $versionNumber,
-        version: $version,
-        status: 'current',
-        name: $name,
-        type: 'applicationVersion'
-      })
-      CREATE (app)-[:HAS_VERSION]->(newAv)
-      CREATE (newAv)-[:INHERITED]->(currentAv)
-      RETURN newAv
-    `;
-    await this.neo4jService.write(createQuery, {
-      applicationId: dto.applicationId,
-      sourceApplicationVersionId: dto.sourceApplicationVersionId,
-      id: newId,
-      unitId,
-      versionNumber: newVn,
-      version: String(newVn),
-      name: appName,
-    });
-    for (const row of snapRows) {
-      const status = isApplicationComponentStatus(row.status) ? row.status : VersionStatus.Active;
-      const linkQuery = `
-        MATCH (av:ApplicationVersion {id: $applicationVersionId})
-        MATCH (cv:ComponentVersion {id: $componentVersionId, unitId: $unitId})
-        CREATE (av)-[:HAS_COMPONENT {status: $status}]->(cv)
-      `;
-      await this.neo4jService.write(linkQuery, {
-        applicationVersionId: newId,
-        componentVersionId: row.id,
-        unitId,
-        status,
-      });
-    }
-    if (cvIds.length > 0) {
-      const linkedRevertQuery = `
-        MATCH (av:ApplicationVersion {id: $applicationVersionId})-[:HAS_COMPONENT]->(cv:ComponentVersion)
-        WHERE cv.id IN $componentVersionIds
-        RETURN count(DISTINCT cv) AS value
-      `;
-      const linkedRevert = await this.neo4jService.read(linkedRevertQuery, {
-        applicationVersionId: newId,
-        componentVersionIds: cvIds,
-      });
-      if (Number(linkedRevert.records[0]?.get('value') ?? 0) !== cvIds.length) {
-        throw new BadRequestException(
-          'Revert failed: component versions must belong to application unit',
-        );
+    const recomputeIds = [...new Set([...previousCompositionIds, ...cvIds])];
+    const linkFailMessage = 'Revert failed: component versions must belong to application unit';
+    const currentGuardMessage = 'Revert failed: source must be current application version';
+
+    const { changes, avNode } = await this.neo4jService.writeInTransaction(async (run) => {
+      const created = await run(
+        `
+        MATCH (app:Application {id: $applicationId})
+          -[:HAS_VERSION]->(currentAv:ApplicationVersion {id: $sourceApplicationVersionId, status: 'current'})
+        SET currentAv.status = 'previous'
+        CREATE (newAv:ApplicationVersion {
+          id: $id,
+          applicationId: $applicationId,
+          unitId: $unitId,
+          versionNumber: $versionNumber,
+          version: $version,
+          status: 'current',
+          name: $name,
+          type: 'applicationVersion'
+        })
+        CREATE (app)-[:HAS_VERSION]->(newAv)
+        CREATE (newAv)-[:INHERITED]->(currentAv)
+        RETURN newAv
+        `,
+        {
+          applicationId: dto.applicationId,
+          sourceApplicationVersionId: dto.sourceApplicationVersionId,
+          id: newId,
+          unitId,
+          versionNumber: newVn,
+          version: String(newVn),
+          name: appName,
+        },
+      );
+      if (created.records.length === 0) {
+        throw new BadRequestException(currentGuardMessage);
       }
-    }
-    await this.emitStatusChanges([...new Set([...previousCompositionIds, ...cvIds])]);
-    const outRead = await this.neo4jService.read(
-      `MATCH (av:ApplicationVersion {id: $id}) RETURN av`,
-      { id: newId },
-    );
-    return mapAppVersionRow(requireGraphNode(outRead.records[0].get('value') ?? outRead.records[0].get('av')));
+
+      await this.linkHasComponents(
+        run,
+        newId,
+        unitId,
+        snapRows.map((row) => ({
+          componentVersionId: row.id,
+          status: isApplicationComponentStatus(row.status) ? row.status : VersionStatus.Active,
+        })),
+      );
+      await this.assertLinkedComponentCount(run, newId, cvIds, linkFailMessage);
+
+      const statusChanges = await recomputeComponentVersionStatuses(
+        this.neo4jService,
+        recomputeIds,
+        run,
+      );
+      const outRead = await run(`MATCH (av:ApplicationVersion {id: $id}) RETURN av`, { id: newId });
+      return {
+        changes: statusChanges,
+        avNode: requireGraphNode(outRead.records[0].get('value') ?? outRead.records[0].get('av')),
+      };
+    });
+
+    this.emitStatusChangeEvents(recomputeIds, changes);
+    return mapAppVersionRow(avNode);
   }
 
   private async buildLeavingPreview(

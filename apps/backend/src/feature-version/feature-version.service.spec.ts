@@ -42,6 +42,9 @@ const idsFromParams = (params?: Record<string, unknown>): string[] => {
   return [];
 };
 
+const isMutatingCypher = (query: string): boolean =>
+  /\b(CREATE|MERGE|DELETE|SET|REMOVE)\b/i.test(query);
+
 const createService = async (
   read: jest.Mock,
   write: jest.Mock = jest.fn(),
@@ -49,10 +52,19 @@ const createService = async (
     componentVersionService?: Partial<ComponentVersionService>;
   } = {},
 ) => {
+  const writeInTransaction = jest.fn(
+    async <T>(work: (run: typeof read) => Promise<T>): Promise<T> =>
+      work(async (query: string, parameters?: Record<string, unknown>) => {
+        if (isMutatingCypher(query)) {
+          return write(query, parameters);
+        }
+        return read(query, parameters);
+      }),
+  );
   const moduleRef = await Test.createTestingModule({
     providers: [
       FeatureVersionService,
-      { provide: Neo4jService, useValue: { read, write } },
+      { provide: Neo4jService, useValue: { read, write, writeInTransaction } },
       {
         provide: ComponentVersionService,
         useValue: extras.componentVersionService ?? { create: jest.fn() },
@@ -1004,11 +1016,15 @@ describe('FeatureVersionService', () => {
         applicationId: 'app-a',
       });
 
-      expect(create).toHaveBeenCalledWith({ componentElementId: 'cmp-1' });
+      expect(create).toHaveBeenCalledWith(
+        { componentElementId: 'cmp-1' },
+        expect.any(Function),
+      );
       expect(patchSpy).toHaveBeenCalledWith(
         'fv-draft',
         [{ componentVersionId: 'cv-2', applicationId: 'app-a' }],
         [{ componentVersionId: 'cv-1', applicationId: 'app-a' }],
+        expect.any(Function),
       );
       expect(result).toEqual({
         fromComponentVersionId: 'cv-1',

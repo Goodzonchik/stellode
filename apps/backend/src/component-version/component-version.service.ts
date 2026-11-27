@@ -2,7 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { filterIdNames, isGraphNode, requireGraphNode, serializeCv } from '../common/graph-helpers';
 import { resolveComponentOrFeatureVersionString } from '../common/parent-version-uniqueness';
-import { Neo4jService } from '../neo4j/neo4j.service';
+import { Neo4jService, type Neo4jRun } from '../neo4j/neo4j.service';
 import type { CreateComponentVersionDto } from '@stellode/models';
 
 const mapUsage = (raw: unknown) => {
@@ -110,14 +110,16 @@ export class ComponentVersionService {
     }));
   }
 
-  async create(dto: CreateComponentVersionDto) {
+  async create(dto: CreateComponentVersionDto, run?: Neo4jRun) {
     const id = randomUUID();
+    const execute: Neo4jRun = run ?? ((q, p) => this.neo4jService.read(q, p));
+    const write: Neo4jRun = run ?? ((q, p) => this.neo4jService.write(q, p));
 
     const checkDraftQuery = `
       MATCH (component:Component {id: $componentId})-[:HAS_DRAFT]->(draft:ComponentVersion)
       RETURN count(draft) AS value
     `;
-    const draftCheck = await this.neo4jService.read(checkDraftQuery, {
+    const draftCheck = await execute(checkDraftQuery, {
       componentId: dto.componentElementId,
     });
     const draftCount = Number(draftCheck.records[0]?.get('value') ?? 0);
@@ -160,7 +162,7 @@ export class ComponentVersionService {
       RETURN newDraft
     `;
 
-    const result = await this.neo4jService.write(createQuery, {
+    const result = await write(createQuery, {
       componentId: dto.componentElementId,
       id,
       version: versionString,
@@ -180,7 +182,7 @@ export class ComponentVersionService {
       CREATE (newDraft)-[newEdge:DEPENDS_ON]->(target)
       SET newEdge = properties(oldEdge)
     `;
-    await this.neo4jService.write(copyDependsOnQuery, {
+    await write(copyDependsOnQuery, {
       id,
       componentId: dto.componentElementId,
     });

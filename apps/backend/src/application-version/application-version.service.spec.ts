@@ -7,9 +7,22 @@ import { ApplicationVersionService } from './application-version.service';
 
 describe('ApplicationVersionService', () => {
   const setup = async (readImpl: jest.Mock, writeImpl?: jest.Mock) => {
+    const write = writeImpl ?? jest.fn().mockResolvedValue({ records: [] });
+    const isMutatingCypher = (query: string): boolean =>
+      /\b(CREATE|MERGE|DELETE|SET|REMOVE)\b/i.test(query);
+    const writeInTransaction = jest.fn(
+      async <T>(work: (run: typeof readImpl) => Promise<T>): Promise<T> =>
+        work(async (query: string, parameters?: Record<string, unknown>) => {
+          if (isMutatingCypher(query)) {
+            return write(query, parameters);
+          }
+          return readImpl(query, parameters);
+        }),
+    );
     const neo4j = {
       read: readImpl,
-      write: writeImpl ?? jest.fn().mockResolvedValue({ records: [] }),
+      write,
+      writeInTransaction,
     };
     const eventEmitter = { emit: jest.fn() };
     const moduleRef = await Test.createTestingModule({
@@ -195,6 +208,78 @@ describe('ApplicationVersionService', () => {
           ],
         }),
       ).rejects.toThrow(/at most one active/);
+    });
+
+    const firstReleaseReadMock = () => {
+      const cvNode = {
+        id: 'n-cv1',
+        properties: { id: 'cv1', componentId: 'c1', status: VersionStatus.Active },
+      };
+      return jest.fn().mockImplementation(async (query: string) => {
+        if (query.includes('count(av) AS value')) {
+          return { records: [{ get: () => 0 }] };
+        }
+        if (query.includes('RETURN a.unitId AS value')) {
+          return { records: [{ get: () => 'unit-1' }] };
+        }
+        if (query.includes('MATCH (cv:ComponentVersion {id: $componentVersionId, unitId: $unitId})')) {
+          return { records: [{ get: () => cvNode }] };
+        }
+        if (query.includes("status: 'draft'") && query.includes('parentIds')) {
+          return { records: [] };
+        }
+        if (query.includes('WHERE v.version = $version')) {
+          return { records: [{ get: () => 0 }] };
+        }
+        if (query.includes('RETURN a.name AS appName')) {
+          return {
+            records: [
+              {
+                get: (key: string) => {
+                  if (key === 'appName') return 'App';
+                  return null;
+                },
+              },
+            ],
+          };
+        }
+        return { records: [] };
+      });
+    };
+
+    it('emits status events only after successful transaction commit', async () => {
+      const av = avNode({ id: 'av-new', versionNumber: 1, version: '1' });
+      const read = firstReleaseReadMock();
+      const { service, neo4j, eventEmitter } = await setup(read);
+      neo4j.writeInTransaction = jest.fn().mockResolvedValue({
+        changes: [{ componentVersionId: 'cv1', fromStatus: 'unactive', toStatus: 'active' }],
+        avNode: av,
+      });
+
+      const result = await service.release({
+        applicationId: 'app1',
+        components: [{ componentVersionId: 'cv1', status: VersionStatus.Active }],
+      });
+
+      expect(result).toMatchObject({ id: 'av-new' });
+      expect(neo4j.writeInTransaction).toHaveBeenCalledTimes(1);
+      expect(eventEmitter.emit).toHaveBeenCalled();
+    });
+
+    it('does not emit status events when transaction work throws', async () => {
+      const read = firstReleaseReadMock();
+      const { service, neo4j, eventEmitter } = await setup(read);
+      neo4j.writeInTransaction = jest.fn(async () => {
+        throw new BadRequestException('Release failed: mid-op');
+      });
+
+      await expect(
+        service.release({
+          applicationId: 'app1',
+          components: [{ componentVersionId: 'cv1', status: VersionStatus.Active }],
+        }),
+      ).rejects.toThrow(/mid-op/);
+      expect(eventEmitter.emit).not.toHaveBeenCalled();
     });
   });
 

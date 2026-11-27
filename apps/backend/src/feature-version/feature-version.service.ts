@@ -25,7 +25,7 @@ import {
   type ComponentVersionStatusChangedPayload,
 } from '../common/component-version-events';
 import { ComponentVersionService } from '../component-version/component-version.service';
-import { Neo4jService, type GraphNode } from '../neo4j/neo4j.service';
+import { Neo4jService, type GraphNode, type Neo4jRun } from '../neo4j/neo4j.service';
 import type {
   CheckFeatureVersionReadyResult,
   CreateFeatureVersionBodyDto,
@@ -797,59 +797,69 @@ export class FeatureVersionService {
       );
     }
 
-    let toComponentVersionId: string;
-    let createdComponentVersion = false;
     if (toComponentVersionIdRaw) {
-      toComponentVersionId = toComponentVersionIdRaw;
-      await this.assertRaiseTargetVersion(fromMeta, toComponentVersionId);
-    } else {
-      try {
-        const created = await this.componentVersionService.create({
-          componentElementId: fromMeta.componentId,
-        });
-        toComponentVersionId = String(created.id);
-        createdComponentVersion = true;
-      } catch (error) {
-        if (
-          error instanceof BadRequestException &&
-          String(error.message).includes('already has a draft')
-        ) {
-          throw new ConflictException(error.message);
-        }
-        throw error;
-      }
+      await this.assertRaiseTargetVersion(fromMeta, toComponentVersionIdRaw);
     }
 
-    await this.patchUsesComponentVersions(
-      featureVersionId,
-      [{ componentVersionId: toComponentVersionId, applicationId }],
-      [{ componentVersionId: fromComponentVersionId, applicationId }],
-    );
-    await this.syncOutgoingDependsOnForApplication(
-      fromComponentVersionId,
-      toComponentVersionId,
-      applicationId,
-      featureVersionId,
-    );
-    await this.retargetIncomingDependsOnForRaise(
-      fromComponentVersionId,
-      toComponentVersionId,
-      applicationId,
-      featureVersionId,
-    );
+    return this.neo4jService.writeInTransaction(async (run) => {
+      let toComponentVersionId: string;
+      let createdComponentVersion = false;
+      if (toComponentVersionIdRaw) {
+        toComponentVersionId = toComponentVersionIdRaw;
+      } else {
+        try {
+          const created = await this.componentVersionService.create(
+            { componentElementId: fromMeta.componentId },
+            run,
+          );
+          toComponentVersionId = String(created.id);
+          createdComponentVersion = true;
+        } catch (error) {
+          if (
+            error instanceof BadRequestException &&
+            String(error.message).includes('already has a draft')
+          ) {
+            throw new ConflictException(error.message);
+          }
+          throw error;
+        }
+      }
 
-    return {
-      fromComponentVersionId,
-      toComponentVersionId,
-      applicationId,
-      createdComponentVersion,
-    };
+      await this.patchUsesComponentVersions(
+        featureVersionId,
+        [{ componentVersionId: toComponentVersionId, applicationId }],
+        [{ componentVersionId: fromComponentVersionId, applicationId }],
+        run,
+      );
+      await this.syncOutgoingDependsOnForApplication(
+        fromComponentVersionId,
+        toComponentVersionId,
+        applicationId,
+        featureVersionId,
+        run,
+      );
+      await this.retargetIncomingDependsOnForRaise(
+        fromComponentVersionId,
+        toComponentVersionId,
+        applicationId,
+        featureVersionId,
+        run,
+      );
+
+      return {
+        fromComponentVersionId,
+        toComponentVersionId,
+        applicationId,
+        createdComponentVersion,
+      };
+    });
   }
 
   async patchUsesComponentVersions(
     featureVersionId: string,
     addBindingsRaw: FeatureComponentVersionBinding[],
     removeBindingsRaw: FeatureComponentVersionBinding[],
+    run?: Neo4jRun,
   ) {
     if (addBindingsRaw.length === 0 && removeBindingsRaw.length === 0) {
       throw new BadRequestException(
@@ -858,6 +868,7 @@ export class FeatureVersionService {
     }
 
     await this.assertDraftUsesBindingsAllowed(featureVersionId);
+    const write: Neo4jRun = run ?? ((query, parameters) => this.neo4jService.write(query, parameters));
 
     const resolveBinding = async (
       binding: FeatureComponentVersionBinding,
@@ -867,6 +878,7 @@ export class FeatureVersionService {
       const resolved = await resolveComponentOrVersionToVersionId(
         this.neo4jService,
         binding.componentVersionId,
+        run,
       );
       if (!resolved) return null;
       return { componentVersionId: resolved, applicationId };
@@ -899,7 +911,7 @@ export class FeatureVersionService {
         MATCH (:FeatureVersion {id: $featureVersionId})-[usesLink:USES_COMPONENT_VERSION {applicationId: $applicationId}]->(cv:ComponentVersion {id: $componentVersionId})
         DELETE usesLink
       `;
-      await this.neo4jService.write(dropQuery, {
+      await write(dropQuery, {
         featureVersionId,
         componentVersionId: binding.componentVersionId,
         applicationId: binding.applicationId,
@@ -910,8 +922,8 @@ export class FeatureVersionService {
       return this.findOne(featureVersionId);
     }
 
-    const bindingContext = await this.loadUsesBindingContext(featureVersionId);
-    const linked = await this.readLinkedBindings(featureVersionId);
+    const bindingContext = await this.loadUsesBindingContext(featureVersionId, run);
+    const linked = await this.readLinkedBindings(featureVersionId, run);
     const hasDuplicate = addBindings.some((binding) => linked.has(this.bindingKey(binding)));
     if (hasDuplicate) {
       throw new BadRequestException(
@@ -924,8 +936,9 @@ export class FeatureVersionService {
       bindingContext,
       addBindings,
       'patchUsesComponentVersions',
+      run,
     );
-    await this.addUsesEdgesWhereMissing(featureVersionId, addBindings);
+    await this.addUsesEdgesWhereMissing(featureVersionId, addBindings, run);
 
     return this.findOne(featureVersionId);
   }
@@ -1032,17 +1045,20 @@ export class FeatureVersionService {
     toComponentVersionId: string,
     applicationId: string,
     featureVersionId: string,
+    run?: Neo4jRun,
   ) {
     const sourceEdges = await this.readOutgoingDependsOnForRaise(
       fromComponentVersionId,
       applicationId,
       featureVersionId,
+      run,
     );
     if (sourceEdges.length === 0) {
       await this.rewriteOutgoingDependsOnFeatureVersion(
         toComponentVersionId,
         applicationId,
         featureVersionId,
+        run,
       );
       return;
     }
@@ -1050,10 +1066,11 @@ export class FeatureVersionService {
       toComponentVersionId,
       applicationId,
       featureVersionId,
+      run,
     );
     for (const edge of sourceEdges) {
       const context = buildRaisedDependsOnContext(edge.context, featureVersionId, applicationId);
-      await this.createDependsOnWithContext(toComponentVersionId, edge.targetId, context);
+      await this.createDependsOnWithContext(toComponentVersionId, edge.targetId, context, run);
     }
   }
 
@@ -1062,15 +1079,19 @@ export class FeatureVersionService {
     toComponentVersionId: string,
     applicationId: string,
     featureVersionId: string,
+    run?: Neo4jRun,
   ) {
+    const write: Neo4jRun = run ?? ((query, parameters) => this.neo4jService.write(query, parameters));
+    const execute: Neo4jRun = run ?? ((query, parameters) => this.neo4jService.read(query, parameters));
     const edges = await this.readIncomingDependsOnForRaise(
       fromComponentVersionId,
       applicationId,
       featureVersionId,
+      run,
     );
     for (const edge of edges) {
       const matchKeys = dependsOnMatchKeyParams(edge.context);
-      await this.neo4jService.write(
+      await write(
         `
         MATCH (source:ComponentVersion {id: $sourceId})-[r:DEPENDS_ON]->(:ComponentVersion {id: $fromId})
         WHERE ${dependsOnMatchKeysWhere('r')}
@@ -1083,7 +1104,7 @@ export class FeatureVersionService {
         },
       );
       if (edge.sourceId === toComponentVersionId) continue;
-      const existing = await this.neo4jService.read(
+      const existing = await execute(
         `
         MATCH (:ComponentVersion {id: $sourceId})-[r:DEPENDS_ON]->(:ComponentVersion {id: $toId})
         WHERE ${dependsOnMatchKeysWhere('r')}
@@ -1096,7 +1117,7 @@ export class FeatureVersionService {
         },
       );
       if (Number(existing.records[0]?.get('value') ?? 0) > 0) continue;
-      await this.createDependsOnWithContext(edge.sourceId, toComponentVersionId, edge.context);
+      await this.createDependsOnWithContext(edge.sourceId, toComponentVersionId, edge.context, run);
     }
   }
 
@@ -1104,8 +1125,10 @@ export class FeatureVersionService {
     componentVersionId: string,
     applicationId: string,
     featureVersionId: string,
+    run?: Neo4jRun,
   ): Promise<ReadonlyArray<{ sourceId: string; context: DependsOnContextDto }>> {
-    const result = await this.neo4jService.read(
+    const execute: Neo4jRun = run ?? ((query, parameters) => this.neo4jService.read(query, parameters));
+    const result = await execute(
       `
       MATCH (source:ComponentVersion)-[r:DEPENDS_ON]->(cv:ComponentVersion {id: $componentVersionId})
       RETURN source.id AS sourceId, properties(r) AS context
@@ -1131,8 +1154,10 @@ export class FeatureVersionService {
     componentVersionId: string,
     applicationId: string,
     featureVersionId: string,
+    run?: Neo4jRun,
   ): Promise<ReadonlyArray<{ targetId: string; context: DependsOnContextDto }>> {
-    const result = await this.neo4jService.read(
+    const execute: Neo4jRun = run ?? ((query, parameters) => this.neo4jService.read(query, parameters));
+    const result = await execute(
       `
       MATCH (cv:ComponentVersion {id: $componentVersionId})-[r:DEPENDS_ON]->(target:ComponentVersion)
       RETURN target.id AS targetId, properties(r) AS context
@@ -1158,14 +1183,17 @@ export class FeatureVersionService {
     componentVersionId: string,
     applicationId: string,
     featureVersionId: string,
+    run?: Neo4jRun,
   ) {
+    const write: Neo4jRun = run ?? ((query, parameters) => this.neo4jService.write(query, parameters));
     const edges = await this.readOutgoingDependsOnForRaise(
       componentVersionId,
       applicationId,
       featureVersionId,
+      run,
     );
     for (const edge of edges) {
-      await this.neo4jService.write(
+      await write(
         `
         MATCH (cv:ComponentVersion {id: $componentVersionId})-[r:DEPENDS_ON]->(target:ComponentVersion {id: $targetId})
         WHERE ${dependsOnMatchKeysWhere('r')}
@@ -1184,16 +1212,19 @@ export class FeatureVersionService {
     componentVersionId: string,
     applicationId: string,
     featureVersionId: string,
+    run?: Neo4jRun,
   ) {
+    const write: Neo4jRun = run ?? ((query, parameters) => this.neo4jService.write(query, parameters));
     const edges = await this.readOutgoingDependsOnForRaise(
       componentVersionId,
       applicationId,
       featureVersionId,
+      run,
     );
     for (const edge of edges) {
       const context = buildRaisedDependsOnContext(edge.context, featureVersionId, applicationId);
       if (dependsOnContextsEqual(context, edge.context)) continue;
-      await this.neo4jService.write(
+      await write(
         `
         MATCH (cv:ComponentVersion {id: $componentVersionId})-[r:DEPENDS_ON]->(target:ComponentVersion {id: $targetId})
         WHERE ${dependsOnMatchKeysWhere('r')}
@@ -1213,8 +1244,10 @@ export class FeatureVersionService {
     sourceComponentVersionId: string,
     targetComponentVersionId: string,
     context: DependsOnContextDto,
+    run?: Neo4jRun,
   ) {
-    await this.neo4jService.write(
+    const write: Neo4jRun = run ?? ((query, parameters) => this.neo4jService.write(query, parameters));
+    await write(
       `
       MATCH (from:ComponentVersion {id: $source})
       MATCH (to:ComponentVersion {id: $target})
@@ -1229,16 +1262,20 @@ export class FeatureVersionService {
     );
   }
 
-  private async loadUsesBindingContext(featureVersionId: string): Promise<{
+  private async loadUsesBindingContext(
+    featureVersionId: string,
+    run?: Neo4jRun,
+  ): Promise<{
     unitId: string;
     inheritedComponentIds: Set<string>;
   }> {
+    const execute: Neo4jRun = run ?? ((query, parameters) => this.neo4jService.read(query, parameters));
     const unitQuery = `
       MATCH (feature:Feature)-[:HAS_VERSION|HAS_DRAFT]->(:FeatureVersion {id: $featureVersionId})
       RETURN feature.unitId AS value
       LIMIT 1
     `;
-    const tidRow = await this.neo4jService.read(unitQuery, { featureVersionId });
+    const tidRow = await execute(unitQuery, { featureVersionId });
     const unitId = tidRow.records[0]?.get('value');
     if (typeof unitId !== 'string') {
       throw new BadRequestException('FeatureVersion not found');
@@ -1249,7 +1286,7 @@ export class FeatureVersionService {
         -[:USES_COMPONENT_VERSION]->(cv:ComponentVersion)
       RETURN DISTINCT cv.componentId AS value
     `;
-    const inhRow = await this.neo4jService.read(inheritedQuery, { featureVersionId });
+    const inhRow = await execute(inheritedQuery, { featureVersionId });
     const inheritedComponentIds = new Set<string>(collectedStrings(inhRow.records));
 
     return { unitId, inheritedComponentIds };
@@ -1260,7 +1297,9 @@ export class FeatureVersionService {
     bindingContext: { unitId: string; inheritedComponentIds: Set<string> },
     bindings: FeatureComponentVersionBinding[],
     errorPrefix: string,
+    run?: Neo4jRun,
   ) {
+    const execute: Neo4jRun = run ?? ((query, parameters) => this.neo4jService.read(query, parameters));
     const cvIds = [...new Set(bindings.map((b) => b.componentVersionId))];
     const validateQuery = `
       MATCH (cv:ComponentVersion {unitId: $unitId})
@@ -1270,7 +1309,7 @@ export class FeatureVersionService {
       RETURN cv.id AS id, cv.componentId AS componentId, cv.status AS status,
         collect(DISTINCT {applicationId: av.applicationId, status: hc.status}) AS appEdges
     `;
-    const vr = await this.neo4jService.read(validateQuery, {
+    const vr = await execute(validateQuery, {
       unitId: bindingContext.unitId,
       componentVersionIds: cvIds,
     });
@@ -1286,7 +1325,7 @@ export class FeatureVersionService {
       RETURN app.id AS value
     `;
     const applicationIds = [...new Set(bindings.map((b) => b.applicationId))];
-    const apps = await this.neo4jService.read(appCheck, {
+    const apps = await execute(appCheck, {
       unitId: bindingContext.unitId,
       applicationIds,
     });
@@ -1327,12 +1366,14 @@ export class FeatureVersionService {
 
   private async readLinkedBindings(
     featureVersionId: string,
+    run?: Neo4jRun,
   ): Promise<ReadonlySet<string>> {
+    const execute: Neo4jRun = run ?? ((query, parameters) => this.neo4jService.read(query, parameters));
     const query = `
       MATCH (:FeatureVersion {id: $featureVersionId})-[uses:USES_COMPONENT_VERSION]->(cv:ComponentVersion)
       RETURN cv.id AS componentVersionId, uses.applicationId AS applicationId
     `;
-    const row = await this.neo4jService.read(query, { featureVersionId });
+    const row = await execute(query, { featureVersionId });
     return new Set(
       row.records
         .map((record) => ({
@@ -1347,13 +1388,15 @@ export class FeatureVersionService {
   private async addUsesEdgesWhereMissing(
     featureVersionId: string,
     bindings: FeatureComponentVersionBinding[],
+    run?: Neo4jRun,
   ) {
+    const write: Neo4jRun = run ?? ((query, parameters) => this.neo4jService.write(query, parameters));
     for (const binding of bindings) {
       const linkQuery = `
         MATCH (fv:FeatureVersion {id: $featureVersionId}), (cv:ComponentVersion {id: $componentVersionId})
         CREATE (fv)-[:USES_COMPONENT_VERSION {id: $edgeId, applicationId: $applicationId}]->(cv)
       `;
-      await this.neo4jService.write(linkQuery, {
+      await write(linkQuery, {
         featureVersionId,
         componentVersionId: binding.componentVersionId,
         applicationId: binding.applicationId,
