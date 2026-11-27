@@ -1436,7 +1436,7 @@ export class FeatureVersionService {
     `;
     const check = await this.neo4jService.read(checkQuery, { featureVersionId: id });
     if (check.records.length === 0) {
-      throw new Error('Cannot delete featureVersion: must be latest draft');
+      throw new BadRequestException('Cannot delete featureVersion: must be latest draft');
     }
     const incoming = parseBlockingRelations(check.records[0].get('incoming'));
     const outgoing = parseBlockingRelations(check.records[0].get('outgoing'));

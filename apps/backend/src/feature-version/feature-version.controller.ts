@@ -1,6 +1,5 @@
 import { ApiOkResponse, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
-  BadRequestException,
   Controller,
   Post,
   Delete,
@@ -78,35 +77,11 @@ export class FeatureVersionController {
         HttpStatus.BAD_REQUEST,
       );
     }
-    try {
-      return await this.featureVersionService.patchUsesComponentVersions(
-        body.featureVersionId,
-        add,
-        remove,
-      );
-    } catch (error) {
-      if (error instanceof Error && error.message) {
-        if (error.message === 'FeatureVersion not found') {
-          throw new HttpException(error.message, HttpStatus.NOT_FOUND);
-        }
-        const badRequestHints = [
-          'несовпадение юнита',
-          'unknown Component',
-          'некорректные цели',
-          'USES_COMPONENT_VERSION',
-          'patchUsesComponentVersions',
-          'applicationId',
-          'не может быть в статусе unactive',
-          'только при наследовании',
-          'только в статусе draft',
-          'уже добавлена',
-        ];
-        if (badRequestHints.some((hint) => error.message.includes(hint))) {
-          throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
-        }
-      }
-      throw error;
-    }
+    return this.featureVersionService.patchUsesComponentVersions(
+      body.featureVersionId,
+      add,
+      remove,
+    );
   }
 
   @ApiOperation({
@@ -130,52 +105,12 @@ export class FeatureVersionController {
   @ApiResponse({ status: 409, description: 'Нельзя создать draft CV (HAS_DRAFT)' })
   @Post('raise-component-version')
   async raiseComponentVersion(@Body() body: RaiseFeatureComponentVersionRequest) {
-    try {
-      return await this.featureVersionService.raiseComponentVersion(body);
-    } catch (error) {
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      if (error instanceof Error && error.message) {
-        if (error.message === 'FeatureVersion not found') {
-          throw new HttpException(error.message, HttpStatus.NOT_FOUND);
-        }
-        const badRequestHints = [
-          'raise-component-version',
-          'только в статусе draft',
-          'USES_COMPONENT_VERSION',
-          'patchUsesComponentVersions',
-          'несовпадение юнита',
-          'некорректные цели',
-          'не может быть в статусе unactive',
-          'только при наследовании',
-        ];
-        if (badRequestHints.some((hint) => error.message.includes(hint))) {
-          throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
-        }
-      }
-      throw error;
-    }
+    return this.featureVersionService.raiseComponentVersion(body);
   }
 
   @ApiOperation({ summary: 'Удалить версию фичи (только draft)' })
   @Delete(':id')
   async remove(@Param('id') id: string) {
-    try {
-      return await this.featureVersionService.remove(id);
-    } catch (error) {
-      if (error instanceof BadRequestException) {
-        throw error;
-      }
-      if (
-        error instanceof Error &&
-        error.message &&
-        (error.message.includes('dependencies') ||
-          error.message.includes('Cannot delete featureVersion'))
-      ) {
-        throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
-      }
-      throw error;
-    }
+    return this.featureVersionService.remove(id);
   }
 }

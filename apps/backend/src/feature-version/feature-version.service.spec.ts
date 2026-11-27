@@ -1600,6 +1600,7 @@ describe('FeatureVersionService', () => {
       const write = jest.fn();
       const service = await createService(read, write);
 
+      await expect(service.remove('fv-active')).rejects.toBeInstanceOf(BadRequestException);
       await expect(service.remove('fv-active')).rejects.toThrow(
         /Cannot delete featureVersion: must be latest draft/,
       );
