@@ -148,14 +148,14 @@ export function Services() {
     try {
       if (editingService) {
         const payload: UpdateServiceDto = {
-          description: values.description || undefined,
+          description: values.description || '',
         };
         await servicesApi.update(editingService.id, payload);
       } else {
         const payload: CreateServiceDto = {
           name: values.name,
           unitId: effectiveUnitId,
-          description: values.description || undefined,
+          description: values.description || '',
         };
         await servicesApi.create(payload);
       }

@@ -94,6 +94,20 @@ describe('TeamService', () => {
       expect(write).toHaveBeenCalled();
     });
 
+    it('clears description when empty string is sent', async () => {
+      const before = teamProps({ description: 'old' });
+      const after = teamProps({ description: null });
+      const read = jest.fn().mockResolvedValueOnce({ records: [mkValueRecord(before)] });
+      const write = jest.fn().mockResolvedValue({ records: [mkValueRecord(after)] });
+      const { service, neo4j } = await setup(read, write);
+      const res = await service.update('tm1', { description: '' });
+      expect(res?.description).toBeNull();
+      expect(neo4j.write).toHaveBeenCalledWith(
+        expect.stringContaining('SET'),
+        expect.objectContaining({ id: 'tm1', p0_description: null }),
+      );
+    });
+
     it('returns dto without write when only matching name and no description change', async () => {
       const before = teamProps();
       const read = jest

@@ -146,14 +146,14 @@ export function Features() {
       if (editingFeature) {
         const payload: UpdateFeatureDto = {
           name: values.name,
-          description: values.description || undefined,
+          description: values.description || '',
           serviceIds: values.serviceIds ?? [],
         };
         await featuresApi.update(editingFeature.id, payload);
       } else {
         const payload: CreateFeatureDto = {
           name: values.name,
-          description: values.description || undefined,
+          description: values.description || '',
           serviceIds: values.serviceIds ?? [],
           unitId: unit?.id ?? '',
         };

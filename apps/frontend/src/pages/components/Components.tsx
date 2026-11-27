@@ -137,7 +137,7 @@ export function Components() {
       if (!editingComponent) return;
       const payload: UpdateComponentDto = {
         unitId,
-        description: values.description || undefined,
+        description: values.description || '',
         teamId: values.teamId,
       };
 

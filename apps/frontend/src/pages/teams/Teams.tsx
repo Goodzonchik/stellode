@@ -101,14 +101,14 @@ export function Teams() {
       if (editingTeam) {
         const payload: UpdateTeamDto = {
           name: values.name,
-          description: values.description || undefined,
+          description: values.description || '',
         };
         await teamsApi.update(editingTeam.id, payload);
       } else {
         const payload: CreateTeamDto = {
           name: values.name,
           unitId: effectiveUnitId,
-          description: values.description || undefined,
+          description: values.description || '',
         };
         await teamsApi.create(payload);
       }

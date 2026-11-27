@@ -117,7 +117,7 @@ export function ComponentCreateDialog({
       const created = await componentsApi.create({
         unitId,
         name: values.name,
-        description: values.description || undefined,
+        description: values.description || '',
         teamId: values.teamId,
         isDependency: values.isDependency,
         isPublic: values.isPublic,

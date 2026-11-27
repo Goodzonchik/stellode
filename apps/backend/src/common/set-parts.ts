@@ -46,7 +46,7 @@ const optionalPropertySet = (
   }
   return {
     assignment: `n.${propertyName} = $${paramName}`,
-    params: { [paramName]: value ?? null },
+    params: { [paramName]: value || null },
   };
 };
 

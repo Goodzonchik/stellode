@@ -48,7 +48,7 @@ export function ApplicationCreateDialog({
       const payload: CreateApplicationDto = {
         name: values.name,
         unitId,
-        description: values.description || undefined,
+        description: values.description || '',
       };
       const created = await applicationsApi.create(payload);
       if (!created?.id) {

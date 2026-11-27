@@ -95,7 +95,7 @@ export function Applications() {
     try {
       const payload: UpdateApplicationDto = {
         name: values.name,
-        description: values.description || undefined,
+        description: values.description || '',
       };
       await applicationsApi.update(editingApp.id, payload);
       handleCloseEdit();
