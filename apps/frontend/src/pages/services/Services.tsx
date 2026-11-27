@@ -163,7 +163,7 @@ export function Services() {
       showToast('Услуга сохранена', ToastVariant.Success);
       void loadUnitLists();
     } catch (err: unknown) {
-      reportFormError(err, 'Не удалось сохранить услуга');
+      reportFormError(err, 'Не удалось сохранить услугу');
     }
   };
 
@@ -176,7 +176,7 @@ export function Services() {
       setArchiveTarget(null);
       void loadUnitLists();
     } catch (err: unknown) {
-      reportFormError(err, 'Не удалось заархивировать услуга');
+      reportFormError(err, 'Не удалось заархивировать услугу');
     }
   };
 
@@ -189,7 +189,7 @@ export function Services() {
       setUnarchiveTarget(null);
       void loadUnitLists();
     } catch (err: unknown) {
-      reportFormError(err, 'Не удалось вернуть услуга из архива');
+      reportFormError(err, 'Не удалось вернуть услугу из архива');
     }
   };
 
@@ -311,7 +311,7 @@ export function Services() {
             rules={[{ required: true, message: 'Укажите название' }]}
           >
             <Input
-              placeholder="Название услугаа"
+              placeholder="Название услуги"
               allowClear={!editingService}
               autoComplete="off"
               disabled={Boolean(editingService)}
@@ -352,7 +352,7 @@ export function Services() {
           setArchiveTarget(null);
           clearError();
         }}
-        title="Архивировать услуга"
+        title="Архивировать услугу"
         footer={[
           <Button
             key="cancel"
@@ -378,7 +378,7 @@ export function Services() {
           />
         ) : null}
         <p>
-          Вы точно хотите заархивировать услуга «{archiveTarget?.name ?? ''}»? Изменение состава
+          Вы точно хотите заархивировать услугу «{archiveTarget?.name ?? ''}»? Изменение состава
           услуги и описания после этого будет недоступно.
         </p>
       </Modal>
@@ -389,7 +389,7 @@ export function Services() {
           setUnarchiveTarget(null);
           clearError();
         }}
-        title="Вернуть услуга из архива"
+        title="Вернуть услугу из архива"
         footer={[
           <Button
             key="cancel"
@@ -415,7 +415,7 @@ export function Services() {
           />
         ) : null}
         <p>
-          Вернуть услуга «{unarchiveTarget?.name ?? ''}» из архива? Снова станут доступны изменение
+          Вернуть услугу «{unarchiveTarget?.name ?? ''}» из архива? Снова станут доступны изменение
           описания и управление фичами в составе услуги.
         </p>
       </Modal>

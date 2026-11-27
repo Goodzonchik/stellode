@@ -377,7 +377,7 @@ export function CrossUnitDependsOnDialog(props: CrossUnitDependsOnDialogProps) {
             allowClear={serviceOptions.length !== 1}
             disabled={pickUnitId === null || serviceOptions.length === 1}
             className="cross-unit-depends-on__field-select"
-            placeholder="Выберите услуга"
+            placeholder="Выберите услугу"
             optionFilterProp="label"
             showSearch
             options={serviceOptions}

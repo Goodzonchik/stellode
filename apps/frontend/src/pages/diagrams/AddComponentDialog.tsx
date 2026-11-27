@@ -249,7 +249,7 @@ export function AddComponentDialog({
             )
           }
         >
-          Select
+          Выбрать
         </Button>
       ),
     },
