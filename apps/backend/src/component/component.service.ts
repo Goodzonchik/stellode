@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import {
   ComponentEntityType,
@@ -167,22 +167,22 @@ export class ComponentService {
     }
 
     if (data.teamId !== undefined && data.unitId !== undefined) {
-      const removeQuery = `
-        MATCH (component:Component {id: $id})<-[maintains:MAINTAINS]-()
-        DELETE maintains
-      `;
-      await this.neo4jService.write(removeQuery, { id });
-
-      const addQuery = `
+      const query = `
         MATCH (team:Team {id: $teamId, unitId: $unitId})
         MATCH (component:Component {id: $id})
+        OPTIONAL MATCH (component)<-[maintains:MAINTAINS]-()
+        DELETE maintains
         CREATE (team)-[:MAINTAINS]->(component)
+        RETURN component
       `;
-      await this.neo4jService.write(addQuery, {
+      const result = await this.neo4jService.write(query, {
         teamId: data.teamId,
         unitId: data.unitId,
         id,
       });
+      if (!result.records[0]) {
+        throw new BadRequestException('Team not found');
+      }
     }
 
     return this.findOne(id);

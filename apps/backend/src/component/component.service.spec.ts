@@ -1,3 +1,4 @@
+import { BadRequestException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { Neo4jService } from '../neo4j/neo4j.service';
 import { ComponentService } from './component.service';
@@ -127,7 +128,9 @@ describe('ComponentService', () => {
         .mockResolvedValueOnce({ records: [mkComponentRecord(storedComponent('Old'))] })
         .mockResolvedValueOnce({ records: [uniquenessRecord] })
         .mockResolvedValueOnce({ records: [mkComponentRecord(storedComponent('Old'))] });
-      const write = jest.fn().mockResolvedValue({ records: [] });
+      const write = jest.fn().mockResolvedValue({
+        records: [{ get: (key: string) => (key === 'component' ? mkComponentNode(storedComponent('Old')) : undefined) }],
+      });
       const { service } = await setup(read, write);
 
       const result = await service.update('c1', {
@@ -145,7 +148,9 @@ describe('ComponentService', () => {
       const read = jest.fn().mockResolvedValue({
         records: [mkComponentRecord(storedComponent('New'))],
       });
-      const write = jest.fn().mockResolvedValue({ records: [] });
+      const write = jest.fn().mockResolvedValue({
+        records: [{ get: (key: string) => (key === 'component' ? mkComponentNode(storedComponent('New')) : undefined) }],
+      });
 
       const { service } = await setup(read, write);
       await service.update('c1', { unitId: 't1', teamId: 'tm1', description: 'New' });
@@ -154,6 +159,37 @@ describe('ComponentService', () => {
       const combined = queries.join('\n');
       expect(combined).not.toContain('isDependency');
       expect(combined).not.toContain('component.type');
+    });
+
+    it('replaces MAINTAINS in a single write', async () => {
+      const read = jest.fn().mockResolvedValue({
+        records: [mkComponentRecord(storedComponent('Desc'), { id: 'tm2', name: 'Other' })],
+      });
+      const write = jest.fn().mockResolvedValue({
+        records: [{ get: (key: string) => (key === 'component' ? mkComponentNode(storedComponent('Desc')) : undefined) }],
+      });
+      const { service } = await setup(read, write);
+
+      const result = await service.update('c1', { unitId: 't1', teamId: 'tm2' });
+
+      expect(write).toHaveBeenCalledTimes(1);
+      const query = String(write.mock.calls[0][0]);
+      expect(query).toContain('DELETE maintains');
+      expect(query).toContain('CREATE (team)-[:MAINTAINS]->(component)');
+      expect(query).toContain('MATCH (team:Team {id: $teamId, unitId: $unitId})');
+      expect(result?.team?.id).toBe('tm2');
+    });
+
+    it('throws BadRequestException when team is not found', async () => {
+      const read = jest.fn();
+      const write = jest.fn().mockResolvedValue({ records: [] });
+      const { service } = await setup(read, write);
+
+      await expect(service.update('c1', { unitId: 't1', teamId: 'missing' })).rejects.toEqual(
+        new BadRequestException('Team not found'),
+      );
+      expect(write).toHaveBeenCalledTimes(1);
+      expect(read).not.toHaveBeenCalled();
     });
   });
 });
